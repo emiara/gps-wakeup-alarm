@@ -21,30 +21,23 @@ Three independent things can wake you, so a single failure doesn't cost you your
 
 ## Finding your stop
 
-Three ways to add one:
-
 **Search** — every bus stop, Bybanen platform, train station, ferry quay and address in
 Norway, via [Entur's geocoder](https://developer.entur.org/pages-geocoder-intro), the
 national public transport data service. No API key. Results are biased towards your current
 position, so searching "Sentrum" in Bergen gives you the Bergen one. There's a **Stops near
 me** button that reverse-geocodes your position into real stop names.
 
-**Google Maps link** — paste a link, or use **Share → Bus Stop Alarm** straight from Google
-Maps. Short `maps.app.goo.gl` links are expanded by following the redirect, and the
-destination coordinates are pulled out of the resulting URL. For a directions link, the
-*destination* is used, not the map centre. Because a map pin is rarely the stop itself, the
-real transport stops around that point are offered underneath so you can snap to the actual
-platform.
-
 **Manual** — coordinates typed in, or captured from where you're standing.
 
-Google's URL format is undocumented and changes, so link parsing is best-effort: the result
-is always shown for you to confirm, never saved silently. If a link only yields a place name,
-that name is looked up in Entur instead.
+Search is the only thing that touches the network. **Tracking and the alarm work entirely
+offline** — once a stop is saved, you can be in a tunnel with no signal and it still rings.
 
-Search and link expansion are the only things that touch the network. **Tracking and the
-alarm work entirely offline** — once a stop is saved, you can be in a tunnel with no signal
-and it still rings.
+## Saved routes
+
+A route is a named, ordered list of your stops: the transfer first, the stop you actually
+get off at last. Arm the route and dismissing one leg's alarm arms the next automatically —
+no re-arming your final destination half asleep at an interchange. The time backstop
+restarts per leg, and only the last leg's dismissal ends the journey.
 
 ## Why it stays alive
 
@@ -94,7 +87,7 @@ Night-bus reliability is the whole point, so the app fights the usual Android ap
 | `RECEIVE_BOOT_COMPLETED` | Resuming after a reboot. |
 | `ACCESS_NOTIFICATION_POLICY` | Ringing through Do Not Disturb. |
 | `MODIFY_AUDIO_SETTINGS` | Raising the alarm volume when it fires. |
-| `INTERNET` | Stop search and expanding Google Maps links. Not used while tracking. |
+| `INTERNET` | Stop search only. Not used while tracking. |
 
 The **"Will the alarm go off?"** checklist on the main screen verifies every one of these at
 runtime — plus the device location switch, the alarm channel's importance, the alarm stream

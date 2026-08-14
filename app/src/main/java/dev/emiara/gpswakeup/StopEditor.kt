@@ -1,7 +1,5 @@
 package dev.emiara.gpswakeup
 
-import android.content.ClipboardManager
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,24 +57,21 @@ import java.util.UUID
 import kotlin.math.roundToInt
 
 private const val TAB_SEARCH = 0
-private const val TAB_LINK = 1
-private const val TAB_MANUAL = 2
+private const val TAB_MANUAL = 1
 
 /**
- * Add or edit a stop, three ways: search Norwegian public transport, paste a Google Maps
- * link, or type coordinates. Whichever route you take, the same confirmation block at the
- * bottom shows exactly what will be saved.
+ * Add or edit a stop, two ways: search Norwegian public transport, or type coordinates.
+ * Either way, the same confirmation block at the bottom shows exactly what will be saved.
  */
 @Composable
 fun StopEditorDialog(
     existing: Stop?,
-    initialLink: String?,
     onDismiss: () -> Unit,
     onSave: (Stop) -> Unit,
 ) {
     val context = LocalContext.current
 
-    var tab by remember { mutableIntStateOf(if (initialLink != null) TAB_LINK else TAB_SEARCH) }
+    var tab by remember { mutableIntStateOf(TAB_SEARCH) }
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var lat by remember { mutableStateOf(existing?.lat?.let { format(it) } ?: "") }
     var lon by remember { mutableStateOf(existing?.lon?.let { format(it) } ?: "") }
@@ -127,11 +122,6 @@ fun StopEditorDialog(
                         text = { Text(stringResource(R.string.tab_search)) },
                     )
                     Tab(
-                        selected = tab == TAB_LINK,
-                        onClick = { tab = TAB_LINK },
-                        text = { Text(stringResource(R.string.tab_link)) },
-                    )
-                    Tab(
                         selected = tab == TAB_MANUAL,
                         onClick = { tab = TAB_MANUAL },
                         text = { Text(stringResource(R.string.tab_manual)) },
@@ -141,13 +131,6 @@ fun StopEditorDialog(
                 Column(modifier = Modifier.weight(1f)) {
                     when (tab) {
                         TAB_SEARCH -> SearchTab(onPick = { apply(it.name, it.lat, it.lon) })
-
-                        TAB_LINK -> LinkTab(
-                            initialLink = initialLink,
-                            onPick = { pickedName, pickedLat, pickedLon ->
-                                apply(pickedName, pickedLat, pickedLon)
-                            },
-                        )
 
                         else -> ManualTab(
                             lat = lat,
@@ -160,7 +143,7 @@ fun StopEditorDialog(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
-                // ---- confirmation block, shared by all three tabs ----
+                // ---- confirmation block, shared by both tabs ----
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -388,149 +371,6 @@ private fun SuggestionRow(suggestion: StopSuggestion, onClick: () -> Unit) {
             )
         }
     }
-}
-
-// ---- google maps link ------------------------------------------------------
-
-@Composable
-private fun LinkTab(
-    initialLink: String?,
-    onPick: (String, Double, Double) -> Unit,
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    var link by remember { mutableStateOf(initialLink.orEmpty()) }
-    var resolving by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf<String?>(null) }
-    var isError by remember { mutableStateOf(false) }
-    var nearbyStops by remember { mutableStateOf<List<StopSuggestion>>(emptyList()) }
-
-    fun resolve(input: String) {
-        if (input.isBlank()) return
-        scope.launch {
-            resolving = true
-            isError = false
-            status = context.getString(R.string.link_resolving)
-            nearbyStops = emptyList()
-
-            val target = MapsLink.resolve(input).getOrNull()
-            if (target == null || target.isEmpty) {
-                resolving = false
-                isError = true
-                status = context.getString(R.string.link_failed)
-                return@launch
-            }
-
-            val targetLat = target.lat
-            val targetLon = target.lon
-            if (targetLat != null && targetLon != null) {
-                val label = target.placeName?.takeIf { it.isNotBlank() }
-                    ?: context.getString(R.string.link_default_name)
-                onPick(label, targetLat, targetLon)
-                resolving = false
-                status = context.getString(R.string.link_ok, label)
-                // A map pin is rarely the stop itself — offer the real stops around it.
-                Entur.reverse(targetLat, targetLon).onSuccess { nearbyStops = it }
-                return@launch
-            }
-
-            // Only a place name came back; look it up as a stop instead.
-            val placeName = target.placeName.orEmpty()
-            val focus = Locate.lastKnown(context)
-            val found = Entur.search(placeName, focus?.latitude, focus?.longitude).getOrNull()
-            resolving = false
-            if (found.isNullOrEmpty()) {
-                isError = true
-                status = context.getString(R.string.link_name_only, placeName)
-            } else {
-                nearbyStops = found
-                status = context.getString(R.string.link_name_matches, placeName)
-            }
-        }
-    }
-
-    LaunchedEffect(initialLink) {
-        if (!initialLink.isNullOrBlank()) resolve(initialLink)
-    }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.link_explainer),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            OutlinedTextField(
-                value = link,
-                onValueChange = { link = it },
-                label = { Text(stringResource(R.string.link_label)) },
-                placeholder = { Text("https://maps.app.goo.gl/…") },
-                minLines = 2,
-                maxLines = 3,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OutlinedButton(onClick = {
-                    val pasted = clipboardText(context)
-                    if (pasted.isNullOrBlank()) {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.link_clipboard_empty),
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                    } else {
-                        link = pasted
-                        resolve(pasted)
-                    }
-                }) { Text(stringResource(R.string.link_paste)) }
-
-                Button(
-                    onClick = { resolve(link) },
-                    enabled = !resolving && link.isNotBlank(),
-                ) { Text(stringResource(R.string.link_resolve)) }
-
-                if (resolving) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                }
-            }
-            status?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isError) WarnAmber else OkGreen,
-                )
-            }
-            if (nearbyStops.isNotEmpty()) {
-                Text(
-                    text = stringResource(R.string.link_pick_stop),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-        }
-
-        LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            items(nearbyStops) { suggestion ->
-                SuggestionRow(suggestion) { onPick(suggestion.name, suggestion.lat, suggestion.lon) }
-                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-            }
-        }
-    }
-}
-
-private fun clipboardText(context: Context): String? {
-    val clipboard = context.getSystemService<ClipboardManager>() ?: return null
-    val clip = clipboard.primaryClip ?: return null
-    if (clip.itemCount == 0) return null
-    return clip.getItemAt(0)?.coerceToText(context)?.toString()
 }
 
 // ---- manual ----------------------------------------------------------------
