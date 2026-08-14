@@ -1,0 +1,65 @@
+name: Build APK
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Assemble debug APK
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Name the APK something recognisable
+        run: cp app/build/outputs/apk/debug/app-debug.apk bus-stop-alarm.apk
+
+      - name: Lint
+        run: ./gradlew --no-daemon lintDebug
+        continue-on-error: true
+
+      - name: Upload APK as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bus-stop-alarm-debug
+          path: bus-stop-alarm.apk
+          if-no-files-found: error
+
+      # Publishes to a rolling prerelease so the APK has a stable, direct download
+      # URL you can open straight from the phone's browser — no unzipping, no login.
+      - name: Publish APK to the rolling "latest-debug" release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="Debug build of \`${GITHUB_REF_NAME}\` at ${GITHUB_SHA}.
+
+          Download **bus-stop-alarm.apk** below and open it on your phone.
+          Debug-signed, so Play Protect will warn you — choose \"Install anyway\".
+
+          After installing, work through the \"Will the alarm go off?\" checklist in
+          the app and press \"Test the alarm now\" before relying on it."
+          if gh release view latest-debug >/dev/null 2>&1; then
+            gh release upload latest-debug bus-stop-alarm.apk --clobber
+            gh release edit latest-debug --notes "$NOTES"
+          else
+            gh release create latest-debug bus-stop-alarm.apk \
+              --prerelease \
+              --title "Latest debug build" \
+              --notes "$NOTES"
+          fi

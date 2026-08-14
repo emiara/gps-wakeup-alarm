@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Bus Stop Alarm</string>
+
+    <!-- Notification channels -->
+    <string name="channel_tracking">Journey tracking</string>
+    <string name="channel_tracking_desc">The ongoing notification shown while your stop is being watched.</string>
+    <string name="channel_alarm">Wake-up alarm</string>
+    <string name="channel_alarm_desc">The alarm that wakes you when you reach your stop. Keep this enabled.</string>
+
+    <!-- Tracking notification -->
+    <string name="notif_idle_title">Not tracking</string>
+    <string name="notif_tracking_title">Watching for %1$s</string>
+    <string name="notif_distance">%1$s to go</string>
+    <string name="notif_waiting_for_fix">Waiting for a GPS fix…</string>
+    <string name="notif_accuracy">" • ±%1$d m"</string>
+    <string name="notif_snoozed">" • snoozed"</string>
+    <string name="notif_stale_fix">" • no fix for a while"</string>
+
+    <!-- Alarm -->
+    <string name="alarm_title">WAKE UP!\nYOUR STOP</string>
+    <string name="alarm_unknown_stop">You have arrived</string>
+    <string name="alarm_hint">Press the big button to stop the alarm. Back is disabled on purpose.</string>
+
+    <!-- Alarm reasons -->
+    <string name="reason_arrived">You are within %1$s of your stop.</string>
+    <string name="reason_leaving">You got as close as %1$s and are now moving away — you may have passed it.</string>
+    <string name="reason_backstop">Time backstop reached — you set a maximum ride time.</string>
+    <string name="reason_snooze_over">Snooze finished.</string>
+    <string name="reason_resumed">Alarm resumed after the app was restarted.</string>
+    <string name="reason_test">This is a test alarm.</string>
+
+    <!-- Tracking messages -->
+    <string name="msg_no_location_permission">Location permission was revoked — tracking cannot run.</string>
+    <string name="msg_no_providers">No location provider is available. Turn on Location.</string>
+
+    <!-- Actions -->
+    <string name="action_arm">Arm alarm</string>
+    <string name="action_cancel_alarm">Cancel alarm</string>
+    <string name="action_im_awake">I\'M AWAKE</string>
+    <string name="action_snooze">Snooze</string>
+    <string name="action_snooze_minutes">Snooze %1$d min</string>
+    <string name="action_test_alarm">Test the alarm now</string>
+    <string name="action_add_stop">+ Add a stop</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_use_current">Use my current location</string>
+    <string name="action_locating">Getting a fix…</string>
+    <string name="action_grant">Grant</string>
+    <string name="action_allow">Allow</string>
+    <string name="action_open">Open</string>
+    <string name="action_fix">Fix</string>
+
+    <!-- Status card -->
+    <string name="status_armed">Armed — %1$s</string>
+    <string name="status_idle">Not armed</string>
+    <string name="status_idle_hint">Pick the stop you get off at, then arm the alarm before you doze off.</string>
+    <string name="status_waiting_fix">Waiting for the first GPS fix…</string>
+    <string name="status_service_restarting">Tracking service is restarting…</string>
+    <string name="label_ring_within">Rings within</string>
+    <string name="label_accuracy">Fix accuracy</string>
+    <string name="label_source">Source</string>
+    <string name="label_last_fix">Last fix</string>
+    <string name="label_backstop">Backstop at</string>
+    <string name="label_snoozed_until">Snoozed until</string>
+
+    <!-- Distances -->
+    <string name="distance_m">%1$d m</string>
+    <string name="distance_km">%1$.2f km</string>
+
+    <!-- Stops -->
+    <string name="section_stops">Your stops</string>
+    <string name="stops_empty">No stops saved yet. Add the stop you get off at — easiest while you are standing there.</string>
+    <string name="stop_subtitle">%1$.5f, %2$.5f · rings within %3$d m</string>
+    <string name="dialog_add_stop">Add a stop</string>
+    <string name="dialog_edit_stop">Edit stop</string>
+    <string name="field_name">Name</string>
+    <string name="field_lat">Latitude</string>
+    <string name="field_lon">Longitude</string>
+    <string name="field_radius">Ring within %1$d m</string>
+    <string name="field_radius_hint">Bigger is safer: at 50 km/h a bus covers 500 m in 36 seconds, and you still need time to get up.</string>
+
+    <!-- Toasts -->
+    <string name="toast_pick_a_stop">Pick a stop first.</string>
+    <string name="toast_need_location">Grant location permission first.</string>
+    <string name="toast_no_fix">Could not get a fix. Go outside or type the coordinates in.</string>
+    <string name="toast_invalid_stop">Enter a name and valid coordinates.</string>
+
+    <!-- Readiness -->
+    <string name="section_readiness">Will the alarm go off?</string>
+    <string name="readiness_all_good">Everything required is in place.</string>
+    <string name="readiness_missing">%1$d required item(s) still missing.</string>
+    <string name="readiness_optional">Optional, but makes the alarm harder to miss.</string>
+
+    <string name="chk_notifications">Notifications</string>
+    <string name="chk_notifications_detail">Needed for the tracking notification and the full-screen alarm.</string>
+    <string name="chk_location_precise">Precise location</string>
+    <string name="chk_location_precise_detail">Approximate location is not accurate enough to catch a bus stop.</string>
+    <string name="chk_location_background">Location: allow all the time</string>
+    <string name="chk_location_background_detail">Without this, tracking stops once the screen goes off or you leave the app.</string>
+    <string name="chk_location_services">Location turned on</string>
+    <string name="chk_location_services_detail">The device-wide location switch has to be on.</string>
+    <string name="chk_battery">Unrestricted battery use</string>
+    <string name="chk_battery_detail">Stops the system from freezing the app during the ride.</string>
+    <string name="chk_exact_alarm">Exact alarms</string>
+    <string name="chk_exact_alarm_detail">Drives the watchdog, the snooze and the time backstop.</string>
+    <string name="chk_full_screen">Full-screen alarms</string>
+    <string name="chk_full_screen_detail">Lets the alarm take over a locked screen instead of being a quiet banner.</string>
+    <string name="chk_alarm_channel">Alarm notification channel</string>
+    <string name="chk_alarm_channel_detail">The \"Wake-up alarm\" channel must not be silenced or set to low importance.</string>
+    <string name="chk_volume">Alarm volume</string>
+    <string name="chk_volume_detail">The alarm plays on the alarm stream, separate from your ringer.</string>
+    <string name="chk_dnd">Do Not Disturb override</string>
+    <string name="chk_dnd_detail">Grant this so the alarm rings through Do Not Disturb.</string>
+    <string name="chk_oem">%1$s background restrictions</string>
+    <string name="chk_oem_detail">Your manufacturer adds its own app-killing rules. Allow autostart and set battery use to unrestricted, then tick this off.</string>
+
+    <!-- Settings -->
+    <string name="section_settings">Settings</string>
+    <string name="setting_force_volume">Force alarm volume to maximum</string>
+    <string name="setting_force_volume_detail">Turns the alarm stream up when it rings, then puts it back.</string>
+    <string name="setting_vibrate">Vibrate</string>
+    <string name="setting_vibrate_detail">Keeps working if the phone ends up muted somehow.</string>
+    <string name="setting_missed_guard">Missed-stop guard</string>
+    <string name="setting_missed_guard_detail">Also ring if you got close and are now clearly moving away again.</string>
+    <string name="setting_backstop_off">Time backstop: off</string>
+    <string name="setting_backstop_on">Time backstop: %1$d min after arming</string>
+    <string name="setting_backstop_detail">A plain clock alarm as a last resort, in case GPS fails completely. Set it a little after your normal ride time.</string>
+    <string name="setting_snooze">Snooze length: %1$d min</string>
+
+    <!-- Arm warning -->
+    <string name="warn_title">Not everything is set up</string>
+    <string name="warn_body">%1$d required item(s) in the checklist are still missing. The alarm may not go off. Arm anyway?</string>
+    <string name="warn_arm_anyway">Arm anyway</string>
+    <string name="warn_fix_first">Let me fix it</string>
+
+    <string name="footer_hint">Test the alarm once at home before you rely on it. Some phones need the manufacturer\'s battery settings changed as well.</string>
+</resources>
