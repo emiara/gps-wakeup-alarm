@@ -105,6 +105,20 @@ fun StatusCard(status: TrackingStatus, armed: Boolean) {
                     )
                 }
 
+                if (status.legCount > 1) {
+                    LabelledRow(
+                        stringResource(R.string.label_route),
+                        stringResource(
+                            R.string.label_leg_of,
+                            status.legIndex + 1,
+                            status.legCount,
+                            status.routeName ?: "",
+                        ),
+                    )
+                }
+                status.nextLegName?.let {
+                    LabelledRow(stringResource(R.string.label_then), it)
+                }
                 LabelledRow(
                     stringResource(R.string.label_ring_within),
                     stringResource(R.string.distance_m, status.targetRadius),

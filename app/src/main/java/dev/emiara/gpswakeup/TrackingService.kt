@@ -71,6 +71,21 @@ class TrackingService : Service(), LocationListener {
             send(ctx, Intent(ctx, TrackingService::class.java).setAction(ACTION_START).putExtra(EXTRA_STOP_ID, stopId))
         }
 
+        /** Arm a saved route, starting at its first leg that still has a stop. */
+        fun armRoute(ctx: Context, routeId: String) {
+            val route = Prefs.routeById(ctx, routeId) ?: return
+            val index = route.legs.indexOfFirst { Prefs.stopById(ctx, it.stopId) != null }
+            if (index < 0) return
+            val stopId = route.legs[index].stopId
+            val backstopMinutes = Prefs.backstopMinutes(ctx)
+            val backstopAt =
+                if (backstopMinutes > 0) System.currentTimeMillis() + backstopMinutes * 60_000L else 0L
+            Prefs.arm(ctx, stopId, backstopAt, routeId = routeId, legIndex = index)
+            Alarms.scheduleWatchdog(ctx)
+            Alarms.scheduleBackstop(ctx, backstopAt)
+            send(ctx, Intent(ctx, TrackingService::class.java).setAction(ACTION_START).putExtra(EXTRA_STOP_ID, stopId))
+        }
+
         fun disarm(ctx: Context) {
             Prefs.disarm(ctx)
             Alarms.cancelAll(ctx)
@@ -150,8 +165,7 @@ class TrackingService : Service(), LocationListener {
 
             ACTION_DISMISS -> {
                 stopAlarmSound()
-                Prefs.disarm(this)
-                Alarms.cancelAll(this)
+                if (advanceRouteOrDisarm()) return START_STICKY
                 stopEverything()
                 return START_NOT_STICKY
             }
@@ -209,12 +223,17 @@ class TrackingService : Service(), LocationListener {
         } else if (stop != null) {
             target = stop
         }
+        val route = Prefs.armedRoute(this)
         TrackerState.update {
             it.copy(
                 serviceRunning = true,
                 targetName = target?.name,
                 targetRadius = target?.radiusMeters ?: Prefs.DEFAULT_RADIUS,
                 backstopAtMillis = Prefs.backstopAt(this),
+                routeName = route?.name,
+                legIndex = if (route == null) 0 else Prefs.armedLegIndex(this),
+                legCount = route?.legs?.size ?: 0,
+                nextLegName = Prefs.nextLeg(this)?.name,
             )
         }
     }
@@ -517,6 +536,37 @@ class TrackingService : Service(), LocationListener {
         goForeground(buildTrackingNotification())
     }
 
+    /**
+     * On a route, dismissing one leg's alarm arms the next automatically — the whole point
+     * of saving a route. Returns false when the journey is finished.
+     */
+    private fun advanceRouteOrDisarm(): Boolean {
+        if (!Prefs.advanceToNextLeg(this)) {
+            Prefs.disarm(this)
+            Alarms.cancelAll(this)
+            return false
+        }
+
+        // Fresh leg: forget how close we got to the previous stop.
+        target = null
+        closestSoFar = Float.MAX_VALUE
+        fixCount = 0
+        currentIntervalMs = -1L
+        resumeTargetIfNeeded(null)
+
+        // The time backstop is per leg, counted from the moment this leg started.
+        val minutes = Prefs.backstopMinutes(this)
+        val backstopAt =
+            if (minutes > 0) System.currentTimeMillis() + minutes * 60_000L else 0L
+        Prefs.setBackstopAt(this, backstopAt)
+        if (backstopAt > 0) Alarms.scheduleBackstop(this, backstopAt) else Alarms.cancelBackstop(this)
+
+        Alarms.scheduleWatchdog(this)
+        startLocationUpdates(force = true)
+        refreshNotification()
+        return true
+    }
+
     private fun snooze() {
         val minutes = Prefs.snoozeMinutes(this)
         val until = System.currentTimeMillis() + minutes * 60_000L
@@ -579,6 +629,7 @@ class TrackingService : Service(), LocationListener {
             }
             val stale = lastFixElapsed > 0 && SystemClock.elapsedRealtime() - lastFixElapsed > 5 * 60_000L
             if (stale) append(getString(R.string.notif_stale_fix))
+            status.nextLegName?.let { append(getString(R.string.notif_next_leg, it)) }
             status.message?.let { append(" • ").append(it) }
         }
 

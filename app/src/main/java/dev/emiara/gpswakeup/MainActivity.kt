@@ -112,9 +112,22 @@ private fun HomeScreen(
 
     var refreshKey by remember { mutableIntStateOf(0) }
     var stops by remember { mutableStateOf(Prefs.stops(context)) }
-    var selectedStopId by remember { mutableStateOf(Prefs.armedStopId(context) ?: Prefs.stops(context).firstOrNull()?.id) }
+    var routes by remember { mutableStateOf(Prefs.routes(context)) }
+    // Exactly one of these is set: you arm either a single stop or a whole route.
+    var selectedStopId by remember {
+        mutableStateOf(
+            if (Prefs.armedRouteId(context) != null) {
+                null
+            } else {
+                Prefs.armedStopId(context) ?: Prefs.stops(context).firstOrNull()?.id
+            },
+        )
+    }
+    var selectedRouteId by remember { mutableStateOf(Prefs.armedRouteId(context)) }
     var editingStop by remember { mutableStateOf<Stop?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingRoute by remember { mutableStateOf<Route?>(null) }
+    var showRouteDialog by remember { mutableStateOf(false) }
     var pendingLink by remember { mutableStateOf<String?>(null) }
     var showArmWarning by remember { mutableStateOf(false) }
     var settingsVersion by remember { mutableIntStateOf(0) }
@@ -125,6 +138,7 @@ private fun HomeScreen(
 
     fun reload() {
         stops = Prefs.stops(context)
+        routes = Prefs.routes(context)
         refreshKey++
     }
 
@@ -182,8 +196,12 @@ private fun HomeScreen(
     }
 
     fun armNow() {
-        val id = selectedStopId ?: return
-        TrackingService.arm(context, id)
+        val routeId = selectedRouteId
+        if (routeId != null) {
+            TrackingService.armRoute(context, routeId)
+        } else {
+            TrackingService.arm(context, selectedStopId ?: return)
+        }
         reload()
     }
 
@@ -224,7 +242,7 @@ private fun HomeScreen(
             } else {
                 Button(
                     onClick = {
-                        if (selectedStopId == null) {
+                        if (selectedStopId == null && selectedRouteId == null) {
                             Toast.makeText(
                                 context,
                                 context.getString(R.string.toast_pick_a_stop),
@@ -244,11 +262,38 @@ private fun HomeScreen(
                 }
             }
 
+            RoutesSection(
+                routes = routes,
+                stops = stops,
+                selectedRouteId = selectedRouteId,
+                armed = armed,
+                onSelect = {
+                    selectedRouteId = it
+                    selectedStopId = null
+                },
+                onAdd = {
+                    editingRoute = null
+                    showRouteDialog = true
+                },
+                onEdit = {
+                    editingRoute = it
+                    showRouteDialog = true
+                },
+                onDelete = {
+                    Prefs.deleteRoute(context, it.id)
+                    if (selectedRouteId == it.id) selectedRouteId = null
+                    reload()
+                },
+            )
+
             StopsSection(
                 stops = stops,
                 selectedStopId = selectedStopId,
                 armed = armed,
-                onSelect = { selectedStopId = it },
+                onSelect = {
+                    selectedStopId = it
+                    selectedRouteId = null
+                },
                 onAdd = {
                     editingStop = null
                     pendingLink = null
@@ -317,6 +362,21 @@ private fun HomeScreen(
                 selectedStopId = stop.id
                 showAddDialog = false
                 pendingLink = null
+                reload()
+            },
+        )
+    }
+
+    if (showRouteDialog) {
+        RouteEditorDialog(
+            existing = editingRoute,
+            stops = stops,
+            onDismiss = { showRouteDialog = false },
+            onSave = { route ->
+                Prefs.upsertRoute(context, route)
+                selectedRouteId = route.id
+                selectedStopId = null
+                showRouteDialog = false
                 reload()
             },
         )

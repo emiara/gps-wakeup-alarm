@@ -170,4 +170,30 @@
 
     <!-- Manual entry -->
     <string name="manual_explainer">Type coordinates, or stand at the stop and use your current position.</string>
+    <!-- Routes -->
+    <string name="section_routes">Saved routes</string>
+    <string name="routes_subtitle">A journey with a transfer: dismiss one alarm and the next stop arms itself.</string>
+    <string name="routes_empty">No routes yet. Save your stops first, then chain them into a route — transfer stop first, the one you get off at last.</string>
+    <string name="action_add_route">+ Add a route</string>
+    <string name="dialog_add_route">Add a route</string>
+    <string name="dialog_edit_route">Edit route</string>
+    <string name="route_name_label">Route name</string>
+    <string name="route_name_placeholder">e.g. Night shift home</string>
+    <string name="route_legs_title">Stops, in order</string>
+    <string name="route_legs_hint">Where you change buses first, where you get off last. Each alarm you dismiss arms the next one automatically.</string>
+    <string name="route_no_legs">Add at least one stop.</string>
+    <string name="route_add_leg">+ Add stop to route</string>
+    <string name="route_leg_transfer">Transfer — next leg arms on dismiss</string>
+    <string name="route_leg_final">Final stop — dismissing ends the journey</string>
+    <string name="route_missing_stop">(stop deleted)</string>
+    <string name="route_pick_stop_title">Which stop?</string>
+    <string name="route_pick_stop_empty">No saved stops yet. Add stops first, then build the route.</string>
+
+    <!-- Route progress -->
+    <string name="label_route">Route</string>
+    <string name="label_leg_of">Leg %1$d of %2$d · %3$s</string>
+    <string name="label_then">Then</string>
+    <string name="notif_next_leg">" • then "%1$s</string>
+    <string name="alarm_next_leg">Then: %1$s</string>
+    <string name="action_off_here_next">GET OFF HERE\nNext stop arms now</string>
 </resources>

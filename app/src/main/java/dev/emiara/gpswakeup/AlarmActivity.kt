@@ -55,6 +55,7 @@ class AlarmActivity : ComponentActivity() {
                 AlarmScreen(
                     stopName = status.targetName,
                     reason = status.alarmReason,
+                    nextLegName = status.nextLegName,
                     snoozeMinutes = Prefs.snoozeMinutes(this),
                     onDismiss = {
                         TrackingService.sendAction(this, TrackingService.ACTION_DISMISS)
@@ -91,6 +92,7 @@ class AlarmActivity : ComponentActivity() {
 private fun AlarmScreen(
     stopName: String?,
     reason: String?,
+    nextLegName: String?,
     snoozeMinutes: Int,
     onDismiss: () -> Unit,
     onSnooze: () -> Unit,
@@ -134,6 +136,17 @@ private fun AlarmScreen(
                 )
             }
 
+            if (nextLegName != null) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.alarm_next_leg, nextLegName),
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                )
+            }
+
             Spacer(Modifier.height(48.dp))
 
             Button(
@@ -147,9 +160,14 @@ private fun AlarmScreen(
                 ),
             ) {
                 Text(
-                    text = stringResource(R.string.action_im_awake),
-                    fontSize = 24.sp,
+                    text = if (nextLegName != null) {
+                        stringResource(R.string.action_off_here_next)
+                    } else {
+                        stringResource(R.string.action_im_awake)
+                    },
+                    fontSize = if (nextLegName != null) 20.sp else 24.sp,
                     fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
                 )
             }
 

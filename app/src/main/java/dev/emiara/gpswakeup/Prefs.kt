@@ -33,6 +33,61 @@ data class Stop(
     }
 }
 
+/** One hop of a journey: get off here. */
+data class RouteLeg(
+    val stopId: String,
+    val note: String = "",
+) {
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("stopId", stopId)
+        put("note", note)
+    }
+
+    companion object {
+        fun fromJson(o: JSONObject) = RouteLeg(
+            stopId = o.optString("stopId"),
+            note = o.optString("note"),
+        )
+    }
+}
+
+/**
+ * A saved journey — the transfer stop, then the one you actually get off at. Arming a route
+ * arms its first leg; dismissing that alarm arms the next one automatically, so you never
+ * have to re-arm the final destination half asleep at a bus interchange.
+ */
+data class Route(
+    val id: String = UUID.randomUUID().toString(),
+    val name: String,
+    val legs: List<RouteLeg>,
+) {
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("id", id)
+        put("name", name)
+        put("legs", JSONArray().also { array -> legs.forEach { array.put(it.toJson()) } })
+    }
+
+    companion object {
+        fun fromJson(o: JSONObject): Route {
+            val legsArray = o.optJSONArray("legs")
+            val legs = if (legsArray == null) {
+                emptyList()
+            } else {
+                (0 until legsArray.length()).mapNotNull { index ->
+                    legsArray.optJSONObject(index)
+                        ?.let { RouteLeg.fromJson(it) }
+                        ?.takeIf { it.stopId.isNotBlank() }
+                }
+            }
+            return Route(
+                id = o.optString("id", UUID.randomUUID().toString()),
+                name = o.optString("name", "Route"),
+                legs = legs,
+            )
+        }
+    }
+}
+
 /**
  * Everything the app remembers, in one SharedPreferences file.
  *
@@ -49,6 +104,9 @@ object Prefs {
     private const val FILE = "gps_wakeup"
 
     private const val K_STOPS = "stops"
+    private const val K_ROUTES = "routes"
+    private const val K_ARMED_ROUTE = "armed_route_id"
+    private const val K_ARMED_LEG = "armed_leg_index"
     private const val K_ARMED_STOP = "armed_stop_id"
     private const val K_ARMED_AT = "armed_at"
     private const val K_BACKSTOP_AT = "backstop_at"
@@ -88,6 +146,11 @@ object Prefs {
 
     fun deleteStop(ctx: Context, id: String) {
         saveStops(ctx, stops(ctx).filterNot { it.id == id })
+        // A route pointing at a stop that no longer exists would silently skip a leg.
+        saveRoutes(
+            ctx,
+            routes(ctx).map { route -> route.copy(legs = route.legs.filterNot { it.stopId == id }) },
+        )
         if (armedStopId(ctx) == id) disarm(ctx)
     }
 
@@ -100,9 +163,17 @@ object Prefs {
 
     fun isArmed(ctx: Context): Boolean = armedStopId(ctx) != null
 
-    fun arm(ctx: Context, stopId: String, backstopAtMillis: Long) {
+    fun arm(
+        ctx: Context,
+        stopId: String,
+        backstopAtMillis: Long,
+        routeId: String? = null,
+        legIndex: Int = 0,
+    ) {
         sp(ctx).edit()
             .putString(K_ARMED_STOP, stopId)
+            .putString(K_ARMED_ROUTE, routeId)
+            .putInt(K_ARMED_LEG, legIndex)
             .putLong(K_ARMED_AT, System.currentTimeMillis())
             .putLong(K_BACKSTOP_AT, backstopAtMillis)
             .putBoolean(K_ALARMING, false)
@@ -112,6 +183,8 @@ object Prefs {
     fun disarm(ctx: Context) {
         sp(ctx).edit()
             .remove(K_ARMED_STOP)
+            .remove(K_ARMED_ROUTE)
+            .remove(K_ARMED_LEG)
             .remove(K_ARMED_AT)
             .remove(K_BACKSTOP_AT)
             .putBoolean(K_ALARMING, false)
@@ -128,6 +201,70 @@ object Prefs {
 
     fun setAlarming(ctx: Context, value: Boolean) {
         sp(ctx).edit().putBoolean(K_ALARMING, value).apply()
+    }
+
+    // ---- saved routes ------------------------------------------------------
+
+    fun routes(ctx: Context): List<Route> {
+        val raw = sp(ctx).getString(K_ROUTES, null) ?: return emptyList()
+        return runCatching {
+            val arr = JSONArray(raw)
+            (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let(Route::fromJson) }
+        }.getOrDefault(emptyList())
+    }
+
+    fun saveRoutes(ctx: Context, routes: List<Route>) {
+        val arr = JSONArray()
+        routes.forEach { arr.put(it.toJson()) }
+        sp(ctx).edit().putString(K_ROUTES, arr.toString()).apply()
+    }
+
+    fun upsertRoute(ctx: Context, route: Route) {
+        val current = routes(ctx).toMutableList()
+        val idx = current.indexOfFirst { it.id == route.id }
+        if (idx >= 0) current[idx] = route else current.add(route)
+        saveRoutes(ctx, current)
+    }
+
+    fun deleteRoute(ctx: Context, id: String) {
+        saveRoutes(ctx, routes(ctx).filterNot { it.id == id })
+        if (armedRouteId(ctx) == id) disarm(ctx)
+    }
+
+    fun routeById(ctx: Context, id: String?): Route? =
+        if (id == null) null else routes(ctx).firstOrNull { it.id == id }
+
+    fun armedRouteId(ctx: Context): String? = sp(ctx).getString(K_ARMED_ROUTE, null)
+
+    fun armedRoute(ctx: Context): Route? = routeById(ctx, armedRouteId(ctx))
+
+    fun armedLegIndex(ctx: Context): Int = sp(ctx).getInt(K_ARMED_LEG, 0)
+
+    /** The leg after the current one, skipping any whose stop has since been deleted. */
+    fun nextLeg(ctx: Context): Stop? {
+        val route = armedRoute(ctx) ?: return null
+        for (index in (armedLegIndex(ctx) + 1) until route.legs.size) {
+            stopById(ctx, route.legs[index].stopId)?.let { return it }
+        }
+        return null
+    }
+
+    /**
+     * Move to the next leg of the armed route. Returns false when there is no next leg,
+     * which means the journey is over and the caller should disarm.
+     */
+    fun advanceToNextLeg(ctx: Context): Boolean {
+        val route = armedRoute(ctx) ?: return false
+        for (index in (armedLegIndex(ctx) + 1) until route.legs.size) {
+            val stop = stopById(ctx, route.legs[index].stopId) ?: continue
+            sp(ctx).edit()
+                .putString(K_ARMED_STOP, stop.id)
+                .putInt(K_ARMED_LEG, index)
+                .putBoolean(K_ALARMING, false)
+                .apply()
+            return true
+        }
+        return false
     }
 
     // ---- settings ----------------------------------------------------------
