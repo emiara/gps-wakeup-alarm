@@ -33,6 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -49,20 +50,44 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 
 class MainActivity : ComponentActivity() {
 
+    /** Text handed to us by the share sheet (a Google Maps link, usually). */
+    private val sharedText = mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         Notifications.createChannels(this)
+        sharedText.value = extractShared(intent)
         setContent {
             WakeupTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    HomeScreen()
+                    HomeScreen(
+                        sharedLink = sharedText.value,
+                        onSharedLinkConsumed = { sharedText.value = null },
+                    )
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        extractShared(intent)?.let { sharedText.value = it }
+    }
+
+    /** Pull a usable link out of a SEND or VIEW intent. */
+    private fun extractShared(intent: Intent?): String? {
+        if (intent == null) return null
+        val candidate = when (intent.action) {
+            Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)
+            Intent.ACTION_VIEW -> intent.dataString
+            else -> null
+        } ?: return null
+        return candidate.takeIf { MapsLink.looksLikeLink(it) }
     }
 }
 
@@ -78,7 +103,10 @@ private fun launchFirstWorking(ctx: Context, intents: List<Intent>): Boolean {
 }
 
 @Composable
-private fun HomeScreen() {
+private fun HomeScreen(
+    sharedLink: String? = null,
+    onSharedLinkConsumed: () -> Unit = {},
+) {
     val context = LocalContext.current
     val status by TrackerState.status.collectAsState()
 
@@ -87,6 +115,7 @@ private fun HomeScreen() {
     var selectedStopId by remember { mutableStateOf(Prefs.armedStopId(context) ?: Prefs.stops(context).firstOrNull()?.id) }
     var editingStop by remember { mutableStateOf<Stop?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var pendingLink by remember { mutableStateOf<String?>(null) }
     var showArmWarning by remember { mutableStateOf(false) }
     var settingsVersion by remember { mutableIntStateOf(0) }
 
@@ -100,6 +129,16 @@ private fun HomeScreen() {
     }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { reload() }
+
+    // A link arrived from the share sheet — open the editor straight onto that tab.
+    LaunchedEffect(sharedLink) {
+        if (!sharedLink.isNullOrBlank()) {
+            editingStop = null
+            pendingLink = sharedLink
+            showAddDialog = true
+            onSharedLinkConsumed()
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -212,10 +251,12 @@ private fun HomeScreen() {
                 onSelect = { selectedStopId = it },
                 onAdd = {
                     editingStop = null
+                    pendingLink = null
                     showAddDialog = true
                 },
                 onEdit = {
                     editingStop = it
+                    pendingLink = null
                     showAddDialog = true
                 },
                 onDelete = {
@@ -264,13 +305,18 @@ private fun HomeScreen() {
     }
 
     if (showAddDialog) {
-        StopDialog(
+        StopEditorDialog(
             existing = editingStop,
-            onDismiss = { showAddDialog = false },
+            initialLink = pendingLink,
+            onDismiss = {
+                showAddDialog = false
+                pendingLink = null
+            },
             onSave = { stop ->
                 Prefs.upsertStop(context, stop)
                 selectedStopId = stop.id
                 showAddDialog = false
+                pendingLink = null
                 reload()
             },
         )

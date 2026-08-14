@@ -137,4 +137,37 @@
     <string name="warn_fix_first">Let me fix it</string>
 
     <string name="footer_hint">Test the alarm once at home before you rely on it. Some phones need the manufacturer\'s battery settings changed as well.</string>
+    <!-- Stop editor tabs -->
+    <string name="tab_search">Search</string>
+    <string name="tab_link">Maps link</string>
+    <string name="tab_manual">Manual</string>
+    <string name="action_pick">Pick</string>
+    <string name="editor_selected">Selected: %1$s, %2$s</string>
+    <string name="editor_nothing_selected">Nothing selected yet — search, paste a link, or enter coordinates.</string>
+
+    <!-- Stop search -->
+    <string name="search_label">Stop, station or address</string>
+    <string name="search_placeholder">e.g. Nesttun terminal</string>
+    <string name="search_hint">Every bus stop, Bybanen platform, train station, ferry quay and address in Norway. Results nearest you come first.</string>
+    <string name="search_nearby">Stops near me</string>
+    <string name="search_no_results">Nothing found. Try a shorter or differently spelled name.</string>
+    <string name="search_failed">Could not reach the stop database. Check your connection, or enter the coordinates manually.</string>
+    <string name="search_need_location">No position yet — grant location permission and try again.</string>
+
+    <!-- Google Maps link -->
+    <string name="link_explainer">Share a place or route from Google Maps to this app, or paste the link here. The destination becomes your stop.</string>
+    <string name="link_label">Google Maps link</string>
+    <string name="link_paste">Paste</string>
+    <string name="link_resolve">Look up</string>
+    <string name="link_resolving">Opening the link…</string>
+    <string name="link_ok">Found: %1$s. Check the nearby stops below if you want the exact platform.</string>
+    <string name="link_failed">Could not read a location from that link. Try sharing the destination as a place rather than a route, or search for it by name.</string>
+    <string name="link_name_only">The link only gave a name (%1$s) and no matching stop was found. Try the Search tab.</string>
+    <string name="link_name_matches">The link pointed at "%1$s". Pick the right stop:</string>
+    <string name="link_pick_stop">Nearby stops</string>
+    <string name="link_default_name">Map location</string>
+    <string name="link_clipboard_empty">Clipboard is empty.</string>
+
+    <!-- Manual entry -->
+    <string name="manual_explainer">Type coordinates, or stand at the stop and use your current position.</string>
 </resources>

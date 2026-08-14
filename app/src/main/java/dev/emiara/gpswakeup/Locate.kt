@@ -22,6 +22,18 @@ object Locate {
             ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) ==
             PackageManager.PERMISSION_GRANTED
 
+    /**
+     * Immediate, no-wait position from the system's cache. Good enough to bias search
+     * results towards where you are; not accurate enough to save as a stop.
+     */
+    fun lastKnown(ctx: Context): Location? {
+        if (!hasPermission(ctx)) return null
+        val lm = ctx.getSystemService<LocationManager>() ?: return null
+        val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+            .filter { it in runCatching { lm.allProviders }.getOrDefault(emptyList()) }
+        return bestLastKnown(lm, providers)
+    }
+
     fun once(ctx: Context, onResult: (Location?) -> Unit) {
         if (!hasPermission(ctx)) {
             onResult(null)

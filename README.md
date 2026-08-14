@@ -19,6 +19,33 @@ Three independent things can wake you, so a single failure doesn't cost you your
 | **Missed-stop guard** | You got close and are now clearly moving away — you slept through it. |
 | **Time backstop** | Optional plain clock alarm N minutes after arming, works with no GPS at all. |
 
+## Finding your stop
+
+Three ways to add one:
+
+**Search** — every bus stop, Bybanen platform, train station, ferry quay and address in
+Norway, via [Entur's geocoder](https://developer.entur.org/pages-geocoder-intro), the
+national public transport data service. No API key. Results are biased towards your current
+position, so searching "Sentrum" in Bergen gives you the Bergen one. There's a **Stops near
+me** button that reverse-geocodes your position into real stop names.
+
+**Google Maps link** — paste a link, or use **Share → Bus Stop Alarm** straight from Google
+Maps. Short `maps.app.goo.gl` links are expanded by following the redirect, and the
+destination coordinates are pulled out of the resulting URL. For a directions link, the
+*destination* is used, not the map centre. Because a map pin is rarely the stop itself, the
+real transport stops around that point are offered underneath so you can snap to the actual
+platform.
+
+**Manual** — coordinates typed in, or captured from where you're standing.
+
+Google's URL format is undocumented and changes, so link parsing is best-effort: the result
+is always shown for you to confirm, never saved silently. If a link only yields a place name,
+that name is looked up in Entur instead.
+
+Search and link expansion are the only things that touch the network. **Tracking and the
+alarm work entirely offline** — once a stop is saved, you can be in a tunnel with no signal
+and it still rings.
+
 ## Why it stays alive
 
 Night-bus reliability is the whole point, so the app fights the usual Android app-killers:
@@ -46,8 +73,9 @@ Night-bus reliability is the whole point, so the app fights the usual Android ap
 - Wakes the display, shows over the lock screen, and **disables the Back button** so a
   half-asleep hand can't silently cancel it.
 - Vibration waveform in parallel.
-- **Bundled fallback tone** (`res/raw/alarm_tone.wav`) in case the device has no usable
-  default alarm ringtone.
+- **Synthesised fallback tone** if the device has no usable default alarm ringtone — a
+  two-tone alarm generated through `AudioTrack`, so there is no audio asset that can be
+  missing or unplayable.
 
 ## Permissions and why each one is needed
 
@@ -66,6 +94,7 @@ Night-bus reliability is the whole point, so the app fights the usual Android ap
 | `RECEIVE_BOOT_COMPLETED` | Resuming after a reboot. |
 | `ACCESS_NOTIFICATION_POLICY` | Ringing through Do Not Disturb. |
 | `MODIFY_AUDIO_SETTINGS` | Raising the alarm volume when it fires. |
+| `INTERNET` | Stop search and expanding Google Maps links. Not used while tracking. |
 
 The **"Will the alarm go off?"** checklist on the main screen verifies every one of these at
 runtime — plus the device location switch, the alarm channel's importance, the alarm stream
@@ -91,16 +120,14 @@ Requires JDK 17 and the Android SDK (compileSdk 35).
 # app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Or grab the APK from the **Build APK** GitHub Actions run for the latest commit — the
-workflow builds it on every push and uploads it as an artifact.
+Or just download the latest build — CI publishes it on every push:
+
+**https://github.com/emiara/gps-wakeup-alarm/releases/tag/latest-debug**
 
 Install with `adb install -r app-debug.apk`, or copy the APK to the phone and open it.
 
-## Setting up a stop
+## Radius guidance
 
-Easiest: stand at the stop, open the app, **Add a stop → Use my current location**.
-Otherwise, get the coordinates from any map app and type them in.
-
-Radius guidance: at 50 km/h a bus covers 500 m in about 36 seconds — enough time to wake up,
+At 50 km/h a bus covers 500 m in about 36 seconds — enough time to wake up,
 gather your things and press the bell. Set it larger for fast routes, smaller for dense city
 stops where 500 m might cover two stops.

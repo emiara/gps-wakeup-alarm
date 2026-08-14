@@ -1,7 +1,6 @@
 package dev.emiara.gpswakeup
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,15 +12,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -38,10 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.text.SimpleDateFormat
@@ -240,138 +234,6 @@ fun StopsSection(
             Text(stringResource(R.string.action_add_stop))
         }
     }
-}
-
-@Composable
-fun StopDialog(
-    existing: Stop?,
-    onDismiss: () -> Unit,
-    onSave: (Stop) -> Unit,
-) {
-    val context = LocalContext.current
-    var name by remember { mutableStateOf(existing?.name ?: "") }
-    var lat by remember { mutableStateOf(existing?.lat?.toString() ?: "") }
-    var lon by remember { mutableStateOf(existing?.lon?.toString() ?: "") }
-    var radius by remember {
-        mutableFloatStateOf((existing?.radiusMeters ?: Prefs.DEFAULT_RADIUS).toFloat())
-    }
-    var locating by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                stringResource(
-                    if (existing == null) R.string.dialog_add_stop else R.string.dialog_edit_stop,
-                ),
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.field_name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = lat,
-                        onValueChange = { lat = it },
-                        label = { Text(stringResource(R.string.field_lat)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.weight(1f),
-                    )
-                    OutlinedTextField(
-                        value = lon,
-                        onValueChange = { lon = it },
-                        label = { Text(stringResource(R.string.field_lon)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                TextButton(
-                    onClick = {
-                        if (!Locate.hasPermission(context)) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.toast_need_location),
-                                Toast.LENGTH_LONG,
-                            ).show()
-                            return@TextButton
-                        }
-                        locating = true
-                        Locate.once(context) { location ->
-                            locating = false
-                            if (location == null) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.toast_no_fix),
-                                    Toast.LENGTH_LONG,
-                                ).show()
-                            } else {
-                                lat = String.format(Locale.US, "%.6f", location.latitude)
-                                lon = String.format(Locale.US, "%.6f", location.longitude)
-                            }
-                        }
-                    },
-                    enabled = !locating,
-                ) {
-                    Text(
-                        stringResource(
-                            if (locating) R.string.action_locating else R.string.action_use_current,
-                        ),
-                    )
-                }
-                Text(
-                    text = stringResource(R.string.field_radius, radius.roundToInt()),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Slider(
-                    value = radius,
-                    onValueChange = { radius = it },
-                    valueRange = Prefs.MIN_RADIUS.toFloat()..Prefs.MAX_RADIUS.toFloat(),
-                    steps = 28,
-                )
-                Text(
-                    text = stringResource(R.string.field_radius_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                val latValue = lat.trim().toDoubleOrNull()
-                val lonValue = lon.trim().toDoubleOrNull()
-                if (name.isBlank() || latValue == null || lonValue == null ||
-                    latValue !in -90.0..90.0 || lonValue !in -180.0..180.0
-                ) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.toast_invalid_stop),
-                        Toast.LENGTH_LONG,
-                    ).show()
-                    return@TextButton
-                }
-                onSave(
-                    Stop(
-                        id = existing?.id ?: java.util.UUID.randomUUID().toString(),
-                        name = name.trim(),
-                        lat = latValue,
-                        lon = lonValue,
-                        radiusMeters = radius.roundToInt(),
-                    ),
-                )
-            }) { Text(stringResource(R.string.action_save)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
-    )
 }
 
 // ---- readiness -------------------------------------------------------------
