@@ -64,12 +64,8 @@ class TrackingService : Service(), LocationListener {
             private set
 
         fun arm(ctx: Context, stopId: String) {
-            val backstopMinutes = Prefs.backstopMinutes(ctx)
-            val backstopAt =
-                if (backstopMinutes > 0) System.currentTimeMillis() + backstopMinutes * 60_000L else 0L
-            Prefs.arm(ctx, stopId, backstopAt)
+            Prefs.arm(ctx, stopId)
             Alarms.scheduleWatchdog(ctx)
-            Alarms.scheduleBackstop(ctx, backstopAt)
             send(ctx, Intent(ctx, TrackingService::class.java).setAction(ACTION_START).putExtra(EXTRA_STOP_ID, stopId))
         }
 
@@ -83,12 +79,8 @@ class TrackingService : Service(), LocationListener {
             val index = legs.indexOfFirst { Prefs.stopById(ctx, it.stopId) != null }
             if (index < 0) return
             val stopId = legs[index].stopId
-            val backstopMinutes = Prefs.backstopMinutes(ctx)
-            val backstopAt =
-                if (backstopMinutes > 0) System.currentTimeMillis() + backstopMinutes * 60_000L else 0L
-            Prefs.arm(ctx, stopId, backstopAt, routeId = routeId, legIndex = index, reversed = reversed)
+            Prefs.arm(ctx, stopId, routeId = routeId, legIndex = index, reversed = reversed)
             Alarms.scheduleWatchdog(ctx)
-            Alarms.scheduleBackstop(ctx, backstopAt)
             send(ctx, Intent(ctx, TrackingService::class.java).setAction(ACTION_START).putExtra(EXTRA_STOP_ID, stopId))
         }
 
@@ -204,7 +196,7 @@ class TrackingService : Service(), LocationListener {
 
             ACTION_TRIGGER_ALARM -> {
                 val reason = intent?.getStringExtra(EXTRA_REASON)
-                    ?: getString(R.string.reason_backstop)
+                    ?: getString(R.string.reason_resumed)
                 resumeTargetIfNeeded(intent?.getStringExtra(EXTRA_STOP_ID))
                 startAlarm(reason)
                 return START_STICKY
@@ -250,7 +242,6 @@ class TrackingService : Service(), LocationListener {
                 serviceRunning = true,
                 targetName = target?.name,
                 targetRadius = target?.radiusMeters ?: Prefs.DEFAULT_RADIUS,
-                backstopAtMillis = Prefs.backstopAt(this),
                 routeName = route?.name,
                 legIndex = if (route == null) 0 else Prefs.armedLegIndex(this),
                 legCount = route?.legs?.size ?: 0,
@@ -448,7 +439,6 @@ class TrackingService : Service(), LocationListener {
         if (alarming) return
         alarming = true
         Prefs.setAlarming(this, true)
-        Alarms.cancelBackstop(this)
 
         TrackerState.update { it.copy(alarming = true, alarmReason = reason, snoozedUntilMillis = 0L) }
 
@@ -605,14 +595,6 @@ class TrackingService : Service(), LocationListener {
         fixCount = 0
         currentIntervalMs = -1L
         resumeTargetIfNeeded(null)
-
-        // The time backstop is per leg, counted from the moment this leg started.
-        val minutes = Prefs.backstopMinutes(this)
-        val backstopAt =
-            if (minutes > 0) System.currentTimeMillis() + minutes * 60_000L else 0L
-        Prefs.setBackstopAt(this, backstopAt)
-        if (backstopAt > 0) Alarms.scheduleBackstop(this, backstopAt) else Alarms.cancelBackstop(this)
-
         Alarms.scheduleWatchdog(this)
         startLocationUpdates(force = true)
         refreshNotification()

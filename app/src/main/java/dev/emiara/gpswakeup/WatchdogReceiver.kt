@@ -14,16 +14,6 @@ class WatchdogReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val ctx = context.applicationContext
         when (intent.action) {
-            Alarms.ACTION_BACKSTOP -> {
-                if (!Prefs.isArmed(ctx)) return
-                Log.i(TAG, "Backstop time reached — ringing")
-                TrackingService.sendAction(
-                    ctx,
-                    TrackingService.ACTION_TRIGGER_ALARM,
-                    ctx.getString(R.string.reason_backstop),
-                )
-            }
-
             Alarms.ACTION_SNOOZE_FIRE -> {
                 if (!Prefs.isArmed(ctx)) return
                 TrackingService.sendAction(

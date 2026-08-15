@@ -11,13 +11,16 @@ Pick the stop you get off at, hit **Arm alarm**, and sleep. A foreground service
 your position and rings a full-screen, lock-screen-piercing alarm on the alarm audio stream
 once you're inside the stop's radius.
 
-Three independent things can wake you, so a single failure doesn't cost you your stop:
+Two things can wake you, so one missed trigger doesn't cost you your stop:
 
 | Trigger | Fires when |
 | --- | --- |
 | **Geofence** | You're within the stop's radius (default 500 m) and the fix is trustworthy. |
 | **Missed-stop guard** | You got close and are now clearly moving away — you slept through it. |
-| **Time backstop** | Optional plain clock alarm N minutes after arming, works with no GPS at all. |
+
+Both are position-based. There is deliberately no "ring after N minutes" fallback: a clock
+alarm you have to guess the duration for is not something you can trust enough to sleep on,
+and it has no sensible meaning on a journey with a transfer.
 
 ## Finding your stop
 
@@ -36,8 +39,8 @@ offline** — once a stop is saved, you can be in a tunnel with no signal and it
 
 A route is a named, ordered list of your stops: the transfer first, the stop you actually
 get off at last. Arm the route and dismissing one leg's alarm arms the next automatically —
-no re-arming your final destination half asleep at an interchange. The time backstop
-restarts per leg, and only the last leg's dismissal ends the journey.
+no re-arming your final destination half asleep at an interchange. Only the last leg's
+dismissal ends the journey.
 
 **Routes run both ways.** Select a route and tap *Ride this route the other way* to arm it
 in reverse — the same saved journey gets you to work and back home again. Direction is a
@@ -90,6 +93,9 @@ sentences rather than numbers:
 > is held at 60 percent, so it buzzes as well. After you get off there it will wake you
 > again at Home.
 
+Nothing in it is hedged or conditional — if the app cannot promise something, it says so
+plainly instead.
+
 That status message is set in **OpenDyslexic** with generous line spacing, since it is the
 one thing you read while barely awake. Only that text — setting the whole interface in it
 makes everything wider and harder to scan. Switchable in Settings.
@@ -120,7 +126,7 @@ makes everything wider and harder to scan. Switchable in Settings.
 | `WAKE_LOCK` | Keeping the CPU alive between fixes; waking the screen for the alarm. |
 | `DISABLE_KEYGUARD` | Showing the alarm screen over the lock screen. |
 | `VIBRATE` | Vibration alongside the sound. |
-| `SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM` | Watchdog, snooze and time backstop. |
+| `SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM` | Watchdog restarts and snooze. |
 | `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | Not being frozen by Doze mid-ride. |
 | `RECEIVE_BOOT_COMPLETED` | Resuming after a reboot. |
 | `ACCESS_NOTIFICATION_POLICY` | Ringing through Do Not Disturb. |

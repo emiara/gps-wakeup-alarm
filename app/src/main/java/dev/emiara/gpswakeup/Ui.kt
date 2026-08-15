@@ -182,12 +182,6 @@ fun StatusCard(status: TrackingStatus, armed: Boolean) {
                         clockTime(status.lastFixAtMillis),
                     )
                 }
-                if (status.backstopAtMillis > System.currentTimeMillis()) {
-                    LabelledRow(
-                        stringResource(R.string.label_backstop),
-                        clockTime(status.backstopAtMillis),
-                    )
-                }
                 if (status.snoozedUntilMillis > System.currentTimeMillis()) {
                     LabelledRow(
                         stringResource(R.string.label_snoozed_until),
@@ -371,7 +365,6 @@ fun SettingsSection(context: Context, onChanged: () -> Unit) {
     var limitHeadset by remember { mutableStateOf(Prefs.limitHeadsetVolume(context)) }
     var headsetPercent by remember { mutableFloatStateOf(Prefs.headsetVolumePercent(context).toFloat()) }
     var dyslexiaFont by remember { mutableStateOf(Prefs.dyslexiaFont(context)) }
-    var backstop by remember { mutableFloatStateOf(Prefs.backstopMinutes(context).toFloat()) }
     var snooze by remember { mutableFloatStateOf(Prefs.snoozeMinutes(context).toFloat()) }
 
     SectionCard(title = stringResource(R.string.section_settings)) {
@@ -436,31 +429,6 @@ fun SettingsSection(context: Context, onChanged: () -> Unit) {
             Prefs.setMissedStopGuard(context, it)
             onChanged()
         }
-
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = if (backstop.roundToInt() == 0) {
-                stringResource(R.string.setting_backstop_off)
-            } else {
-                stringResource(R.string.setting_backstop_on, backstop.roundToInt())
-            },
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = stringResource(R.string.setting_backstop_detail),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Slider(
-            value = backstop,
-            onValueChange = { backstop = it },
-            onValueChangeFinished = {
-                Prefs.setBackstopMinutes(context, backstop.roundToInt())
-                onChanged()
-            },
-            valueRange = 0f..180f,
-            steps = 35,
-        )
 
         Text(
             text = stringResource(R.string.setting_snooze, snooze.roundToInt()),

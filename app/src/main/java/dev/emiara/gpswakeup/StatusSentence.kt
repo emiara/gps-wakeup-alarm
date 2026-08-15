@@ -73,9 +73,6 @@ object StatusSentence {
         if (status.snoozedUntilMillis > System.currentTimeMillis()) {
             parts += ctx.getString(R.string.sentence_snoozed, clockTime(status.snoozedUntilMillis))
         }
-        if (status.backstopAtMillis > System.currentTimeMillis()) {
-            parts += ctx.getString(R.string.sentence_backstop, clockTime(status.backstopAtMillis))
-        }
         status.message?.let { parts += it }
 
         return parts.joinToString(" ")

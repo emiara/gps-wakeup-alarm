@@ -12,8 +12,6 @@ class BootReceiver : BroadcastReceiver() {
 
         val stopId = Prefs.armedStopId(ctx) ?: return
         Alarms.scheduleWatchdog(ctx, delayMillis = 10_000L)
-        Prefs.backstopAt(ctx).takeIf { it > System.currentTimeMillis() }
-            ?.let { Alarms.scheduleBackstop(ctx, it) }
 
         TrackingService.send(
             ctx,

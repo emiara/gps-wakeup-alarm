@@ -25,7 +25,6 @@
     <!-- Alarm reasons -->
     <string name="reason_arrived">You are within %1$s of your stop.</string>
     <string name="reason_leaving">You got as close as %1$s and are now moving away — you may have passed it.</string>
-    <string name="reason_backstop">Time backstop reached — you set a maximum ride time.</string>
     <string name="reason_snooze_over">Snooze finished.</string>
     <string name="reason_resumed">Alarm resumed after the app was restarted.</string>
     <string name="reason_test">This is a test alarm.</string>
@@ -63,7 +62,6 @@
     <string name="label_accuracy">Fix accuracy</string>
     <string name="label_source">Source</string>
     <string name="label_last_fix">Last fix</string>
-    <string name="label_backstop">Backstop at</string>
     <string name="label_snoozed_until">Snoozed until</string>
 
     <!-- Distances -->
@@ -105,7 +103,7 @@
     <string name="chk_battery">Unrestricted battery use</string>
     <string name="chk_battery_detail">Stops the system from freezing the app during the ride.</string>
     <string name="chk_exact_alarm">Exact alarms</string>
-    <string name="chk_exact_alarm_detail">Drives the watchdog, the snooze and the time backstop.</string>
+    <string name="chk_exact_alarm_detail">Lets the app restart its own tracking if Android kills it, and drives the snooze.</string>
     <string name="chk_full_screen">Full-screen alarms</string>
     <string name="chk_full_screen_detail">Lets the alarm take over a locked screen instead of being a quiet banner.</string>
     <string name="chk_alarm_channel">Alarm notification channel</string>
@@ -125,9 +123,6 @@
     <string name="setting_vibrate_detail">Keeps working if the phone ends up muted somehow. Always on when headphones are connected.</string>
     <string name="setting_missed_guard">Missed-stop guard</string>
     <string name="setting_missed_guard_detail">Also ring if you got close and are now clearly moving away again.</string>
-    <string name="setting_backstop_off">Time backstop: off</string>
-    <string name="setting_backstop_on">Time backstop: %1$d min after arming</string>
-    <string name="setting_backstop_detail">A plain clock alarm as a last resort, in case GPS fails completely. Set it a little after your normal ride time.</string>
     <string name="setting_snooze">Snooze length: %1$d min</string>
 
     <!-- Arm warning -->
@@ -204,7 +199,6 @@
     <string name="sentence_ringing_next">After this one, %1$s is still coming.</string>
     <string name="sentence_service_restarting">The tracker is restarting itself right now.</string>
     <string name="sentence_snoozed">You snoozed it, so it will ring again at %1$s.</string>
-    <string name="sentence_backstop">Even if the GPS fails completely, it will ring at %1$s.</string>
 
     <!-- Alarm output -->
     <string name="label_alarm_output">Alarm plays</string>

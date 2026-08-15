@@ -110,12 +110,10 @@ object Prefs {
     private const val K_ARMED_REVERSED = "armed_reversed"
     private const val K_ARMED_STOP = "armed_stop_id"
     private const val K_ARMED_AT = "armed_at"
-    private const val K_BACKSTOP_AT = "backstop_at"
     private const val K_ALARMING = "alarming"
     private const val K_MAX_VOLUME = "force_max_volume"
     private const val K_VIBRATE = "vibrate"
     private const val K_MISSED_STOP = "missed_stop_guard"
-    private const val K_BACKSTOP_MINUTES = "backstop_minutes"
     private const val K_SNOOZE_MINUTES = "snooze_minutes"
     private const val K_PREVIOUS_VOLUME = "previous_alarm_volume"
     private const val K_LIMIT_HEADSET = "limit_headset_volume"
@@ -170,7 +168,6 @@ object Prefs {
     fun arm(
         ctx: Context,
         stopId: String,
-        backstopAtMillis: Long,
         routeId: String? = null,
         legIndex: Int = 0,
         reversed: Boolean = false,
@@ -181,7 +178,6 @@ object Prefs {
             .putInt(K_ARMED_LEG, legIndex)
             .putBoolean(K_ARMED_REVERSED, reversed)
             .putLong(K_ARMED_AT, System.currentTimeMillis())
-            .putLong(K_BACKSTOP_AT, backstopAtMillis)
             .putBoolean(K_ALARMING, false)
             .apply()
     }
@@ -193,15 +189,8 @@ object Prefs {
             .remove(K_ARMED_LEG)
             .remove(K_ARMED_REVERSED)
             .remove(K_ARMED_AT)
-            .remove(K_BACKSTOP_AT)
             .putBoolean(K_ALARMING, false)
             .apply()
-    }
-
-    fun backstopAt(ctx: Context): Long = sp(ctx).getLong(K_BACKSTOP_AT, 0L)
-
-    fun setBackstopAt(ctx: Context, at: Long) {
-        sp(ctx).edit().putLong(K_BACKSTOP_AT, at).apply()
     }
 
     fun isAlarming(ctx: Context): Boolean = sp(ctx).getBoolean(K_ALARMING, false)
@@ -307,13 +296,6 @@ object Prefs {
 
     fun setMissedStopGuard(ctx: Context, value: Boolean) {
         sp(ctx).edit().putBoolean(K_MISSED_STOP, value).apply()
-    }
-
-    /** Wake me no later than N minutes after arming, even with no GPS at all. 0 = off. */
-    fun backstopMinutes(ctx: Context): Int = sp(ctx).getInt(K_BACKSTOP_MINUTES, 0)
-
-    fun setBackstopMinutes(ctx: Context, value: Int) {
-        sp(ctx).edit().putInt(K_BACKSTOP_MINUTES, value.coerceIn(0, 240)).apply()
     }
 
     fun snoozeMinutes(ctx: Context): Int = sp(ctx).getInt(K_SNOOZE_MINUTES, 2)

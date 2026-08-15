@@ -22,7 +22,6 @@ data class TrackingStatus(
     val alarming: Boolean = false,
     val alarmReason: String? = null,
     val snoozedUntilMillis: Long = 0L,
-    val backstopAtMillis: Long = 0L,
     val message: String? = null,
 )
 

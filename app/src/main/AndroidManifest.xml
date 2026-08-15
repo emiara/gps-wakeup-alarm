@@ -21,7 +21,7 @@
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
-    <!-- Exact alarms drive the watchdog, the time backstop and snooze.
+    <!-- Exact alarms drive the watchdog restart and the snooze.
          USE_EXACT_ALARM is auto-granted to alarm-clock apps on Android 13+. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission
