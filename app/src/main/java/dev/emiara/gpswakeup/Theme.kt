@@ -1,18 +1,12 @@
 package dev.emiara.gpswakeup
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.isSpecified
-import androidx.compose.ui.unit.sp
 
 val AlarmRed = Color(0xFFC62828)
 val NightAmber = Color(0xFFFFB74D)
@@ -39,46 +33,16 @@ private val DarkColors = darkColorScheme(
 /**
  * OpenDyslexic — weighted letter bottoms and distinct shapes, so characters are harder to
  * flip or confuse. Bundled rather than downloaded so it works offline.
+ *
+ * Used only for the plain-language status text. That is the one thing you read while barely
+ * awake; setting the whole interface in it makes everything wider and harder to scan.
  */
-private val OpenDyslexic = FontFamily(
+val OpenDyslexic = FontFamily(
     Font(R.font.opendyslexic_regular, FontWeight.Normal),
     Font(R.font.opendyslexic_bold, FontWeight.Bold),
 )
 
-/**
- * OpenDyslexic runs wide and tall, so every style gets extra line height — cramped lines
- * undo most of the benefit of the typeface.
- */
-private fun Typography.dyslexic(): Typography {
-    fun androidx.compose.ui.text.TextStyle.fix() = copy(
-        fontFamily = OpenDyslexic,
-        lineHeight = if (fontSize.isSpecified) fontSize * 1.5f else lineHeight,
-        letterSpacing = 0.sp,
-    )
-    return Typography(
-        displayLarge = displayLarge.fix(),
-        displayMedium = displayMedium.fix(),
-        displaySmall = displaySmall.fix(),
-        headlineLarge = headlineLarge.fix(),
-        headlineMedium = headlineMedium.fix(),
-        headlineSmall = headlineSmall.fix(),
-        titleLarge = titleLarge.fix(),
-        titleMedium = titleMedium.fix(),
-        titleSmall = titleSmall.fix(),
-        bodyLarge = bodyLarge.fix(),
-        bodyMedium = bodyMedium.fix(),
-        bodySmall = bodySmall.fix(),
-        labelLarge = labelLarge.fix(),
-        labelMedium = labelMedium.fix(),
-        labelSmall = labelSmall.fix(),
-    )
-}
-
 @Composable
 fun WakeupTheme(content: @Composable () -> Unit) {
-    val useDyslexic by UiPrefs.dyslexiaFont.collectAsState()
-    val typography = remember(useDyslexic) {
-        if (useDyslexic) Typography().dyslexic() else Typography()
-    }
-    MaterialTheme(colorScheme = DarkColors, typography = typography, content = content)
+    MaterialTheme(colorScheme = DarkColors, content = content)
 }

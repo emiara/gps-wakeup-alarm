@@ -39,6 +39,10 @@ get off at last. Arm the route and dismissing one leg's alarm arms the next auto
 no re-arming your final destination half asleep at an interchange. The time backstop
 restarts per leg, and only the last leg's dismissal ends the journey.
 
+**Routes run both ways.** Select a route and tap *Ride this route the other way* to arm it
+in reverse — the same saved journey gets you to work and back home again. Direction is a
+property of this trip, not an edit to the route, so the saved order is never touched.
+
 ## Why it stays alive
 
 Night-bus reliability is the whole point, so the app fights the usual Android app-killers:
@@ -86,8 +90,9 @@ sentences rather than numbers:
 > is held at 60 percent, so it buzzes as well. After you get off there it will wake you
 > again at Home.
 
-The interface is set in **OpenDyslexic** by default, with extra line spacing — the users of
-this app are tired by definition. It can be switched off in Settings.
+That status message is set in **OpenDyslexic** with generous line spacing, since it is the
+one thing you read while barely awake. Only that text — setting the whole interface in it
+makes everything wider and harder to scan. Switchable in Settings.
 
 ## Why it's audible
 

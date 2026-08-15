@@ -107,6 +107,7 @@ object Prefs {
     private const val K_ROUTES = "routes"
     private const val K_ARMED_ROUTE = "armed_route_id"
     private const val K_ARMED_LEG = "armed_leg_index"
+    private const val K_ARMED_REVERSED = "armed_reversed"
     private const val K_ARMED_STOP = "armed_stop_id"
     private const val K_ARMED_AT = "armed_at"
     private const val K_BACKSTOP_AT = "backstop_at"
@@ -172,11 +173,13 @@ object Prefs {
         backstopAtMillis: Long,
         routeId: String? = null,
         legIndex: Int = 0,
+        reversed: Boolean = false,
     ) {
         sp(ctx).edit()
             .putString(K_ARMED_STOP, stopId)
             .putString(K_ARMED_ROUTE, routeId)
             .putInt(K_ARMED_LEG, legIndex)
+            .putBoolean(K_ARMED_REVERSED, reversed)
             .putLong(K_ARMED_AT, System.currentTimeMillis())
             .putLong(K_BACKSTOP_AT, backstopAtMillis)
             .putBoolean(K_ALARMING, false)
@@ -188,6 +191,7 @@ object Prefs {
             .remove(K_ARMED_STOP)
             .remove(K_ARMED_ROUTE)
             .remove(K_ARMED_LEG)
+            .remove(K_ARMED_REVERSED)
             .remove(K_ARMED_AT)
             .remove(K_BACKSTOP_AT)
             .putBoolean(K_ALARMING, false)
@@ -243,11 +247,26 @@ object Prefs {
 
     fun armedLegIndex(ctx: Context): Int = sp(ctx).getInt(K_ARMED_LEG, 0)
 
+    /** True when the armed route is being ridden backwards. */
+    fun armedReversed(ctx: Context): Boolean = sp(ctx).getBoolean(K_ARMED_REVERSED, false)
+
+    /**
+     * The legs of a route in travel order. Reversing a route is a property of this journey,
+     * not an edit to the saved route — the same route works there and back.
+     */
+    fun legsInOrder(route: Route, reversed: Boolean): List<RouteLeg> =
+        if (reversed) route.legs.reversed() else route.legs
+
+    private fun armedLegs(ctx: Context): List<RouteLeg> {
+        val route = armedRoute(ctx) ?: return emptyList()
+        return legsInOrder(route, armedReversed(ctx))
+    }
+
     /** The leg after the current one, skipping any whose stop has since been deleted. */
     fun nextLeg(ctx: Context): Stop? {
-        val route = armedRoute(ctx) ?: return null
-        for (index in (armedLegIndex(ctx) + 1) until route.legs.size) {
-            stopById(ctx, route.legs[index].stopId)?.let { return it }
+        val legs = armedLegs(ctx)
+        for (index in (armedLegIndex(ctx) + 1) until legs.size) {
+            stopById(ctx, legs[index].stopId)?.let { return it }
         }
         return null
     }
@@ -257,9 +276,9 @@ object Prefs {
      * which means the journey is over and the caller should disarm.
      */
     fun advanceToNextLeg(ctx: Context): Boolean {
-        val route = armedRoute(ctx) ?: return false
-        for (index in (armedLegIndex(ctx) + 1) until route.legs.size) {
-            val stop = stopById(ctx, route.legs[index].stopId) ?: continue
+        val legs = armedLegs(ctx)
+        for (index in (armedLegIndex(ctx) + 1) until legs.size) {
+            val stop = stopById(ctx, legs[index].stopId) ?: continue
             sp(ctx).edit()
                 .putString(K_ARMED_STOP, stop.id)
                 .putInt(K_ARMED_LEG, index)

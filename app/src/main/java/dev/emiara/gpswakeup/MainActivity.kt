@@ -96,6 +96,7 @@ private fun HomeScreen() {
         )
     }
     var selectedRouteId by remember { mutableStateOf(Prefs.armedRouteId(context)) }
+    var routeReversed by remember { mutableStateOf(Prefs.armedReversed(context)) }
     var editingStop by remember { mutableStateOf<Stop?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
     var editingRoute by remember { mutableStateOf<Route?>(null) }
@@ -159,7 +160,7 @@ private fun HomeScreen() {
     fun armNow() {
         val routeId = selectedRouteId
         if (routeId != null) {
-            TrackingService.armRoute(context, routeId)
+            TrackingService.armRoute(context, routeId, reversed = routeReversed)
         } else {
             TrackingService.arm(context, selectedStopId ?: return)
         }
@@ -229,11 +230,15 @@ private fun HomeScreen() {
                 routes = routes,
                 stops = stops,
                 selectedRouteId = selectedRouteId,
+                reversed = routeReversed,
                 armed = armed,
                 onSelect = {
+                    // Picking a different route starts from its saved direction.
+                    if (it != selectedRouteId) routeReversed = false
                     selectedRouteId = it
                     selectedStopId = null
                 },
+                onToggleDirection = { routeReversed = !routeReversed },
                 onAdd = {
                     editingRoute = null
                     showRouteDialog = true

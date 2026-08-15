@@ -47,8 +47,10 @@ fun RoutesSection(
     routes: List<Route>,
     stops: List<Stop>,
     selectedRouteId: String?,
+    reversed: Boolean,
     armed: Boolean,
     onSelect: (String) -> Unit,
+    onToggleDirection: () -> Unit,
     onAdd: () -> Unit,
     onEdit: (Route) -> Unit,
     onDelete: (Route) -> Unit,
@@ -81,13 +83,29 @@ fun RoutesSection(
                     enabled = !armed,
                     onClick = { onSelect(route.id) },
                 )
+                val selected = route.id == selectedRouteId
+                // Only the selected route shows a direction — the rest are listed as saved.
+                val showReversed = selected && reversed
                 Column(modifier = Modifier.weight(1f)) {
                     Text(route.name, fontWeight = FontWeight.SemiBold)
                     Text(
-                        text = describe(route, stops),
+                        text = describe(route, stops, showReversed),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (selected && route.legs.size > 1) {
+                        Text(
+                            text = stringResource(
+                                if (showReversed) {
+                                    R.string.route_direction_reversed
+                                } else {
+                                    R.string.route_direction_normal
+                                },
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (showReversed) NightAmber else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 TextButton(onClick = { onEdit(route) }, enabled = !armed) {
                     Text(stringResource(R.string.action_edit))
@@ -99,6 +117,13 @@ fun RoutesSection(
                     )
                 }
             }
+            if (route.id == selectedRouteId && route.legs.size > 1) {
+                TextButton(
+                    onClick = onToggleDirection,
+                    enabled = !armed,
+                    modifier = Modifier.padding(start = 40.dp),
+                ) { Text(stringResource(R.string.action_reverse_route)) }
+            }
             HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
         }
         Spacer(Modifier.height(8.dp))
@@ -108,9 +133,10 @@ fun RoutesSection(
     }
 }
 
-private fun describe(route: Route, stops: List<Stop>): String {
+private fun describe(route: Route, stops: List<Stop>, reversed: Boolean): String {
     if (route.legs.isEmpty()) return "—"
-    return route.legs.joinToString(" → ") { leg ->
+    val ordered = if (reversed) route.legs.reversed() else route.legs
+    return ordered.joinToString(" → ") { leg ->
         stops.firstOrNull { it.id == leg.stopId }?.name ?: "?"
     }
 }

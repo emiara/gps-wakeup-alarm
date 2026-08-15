@@ -73,16 +73,20 @@ class TrackingService : Service(), LocationListener {
             send(ctx, Intent(ctx, TrackingService::class.java).setAction(ACTION_START).putExtra(EXTRA_STOP_ID, stopId))
         }
 
-        /** Arm a saved route, starting at its first leg that still has a stop. */
-        fun armRoute(ctx: Context, routeId: String) {
+        /**
+         * Arm a saved route, starting at its first leg that still has a stop. [reversed]
+         * rides the same route the other way without editing it.
+         */
+        fun armRoute(ctx: Context, routeId: String, reversed: Boolean = false) {
             val route = Prefs.routeById(ctx, routeId) ?: return
-            val index = route.legs.indexOfFirst { Prefs.stopById(ctx, it.stopId) != null }
+            val legs = Prefs.legsInOrder(route, reversed)
+            val index = legs.indexOfFirst { Prefs.stopById(ctx, it.stopId) != null }
             if (index < 0) return
-            val stopId = route.legs[index].stopId
+            val stopId = legs[index].stopId
             val backstopMinutes = Prefs.backstopMinutes(ctx)
             val backstopAt =
                 if (backstopMinutes > 0) System.currentTimeMillis() + backstopMinutes * 60_000L else 0L
-            Prefs.arm(ctx, stopId, backstopAt, routeId = routeId, legIndex = index)
+            Prefs.arm(ctx, stopId, backstopAt, routeId = routeId, legIndex = index, reversed = reversed)
             Alarms.scheduleWatchdog(ctx)
             Alarms.scheduleBackstop(ctx, backstopAt)
             send(ctx, Intent(ctx, TrackingService::class.java).setAction(ACTION_START).putExtra(EXTRA_STOP_ID, stopId))

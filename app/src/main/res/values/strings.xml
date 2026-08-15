@@ -173,6 +173,9 @@
     <string name="route_leg_final">Final stop — dismissing ends the journey</string>
     <string name="route_missing_stop">(stop deleted)</string>
     <string name="route_pick_stop_title">Which stop?</string>
+    <string name="action_reverse_route">⇄ Ride this route the other way</string>
+    <string name="route_direction_normal">Saved direction</string>
+    <string name="route_direction_reversed">Reversed — last stop first</string>
     <string name="route_pick_stop_empty">No saved stops yet. Add stops first, then build the route.</string>
 
     <!-- Route progress -->
@@ -213,6 +216,6 @@
     <string name="setting_limit_headset">Protect my hearing on headphones</string>
     <string name="setting_limit_headset_detail">Caps the alarm volume when it plays into headphones instead of the speaker, and always vibrates to make up for it.</string>
     <string name="setting_headset_percent">Headphone volume cap: %1$d percent</string>
-    <string name="setting_dyslexia_font">Dyslexia-friendly font</string>
-    <string name="setting_dyslexia_font_detail">Uses OpenDyslexic, with extra spacing between lines.</string>
+    <string name="setting_dyslexia_font">Dyslexia-friendly status text</string>
+    <string name="setting_dyslexia_font_detail">Sets the status message at the top of this screen in OpenDyslexic. The rest of the app is unchanged.</string>
 </resources>

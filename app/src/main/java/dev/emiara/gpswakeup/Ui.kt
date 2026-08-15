@@ -25,6 +25,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +54,7 @@ import kotlin.math.roundToInt
 @Composable
 fun StatusSentenceCard(status: TrackingStatus, armed: Boolean) {
     val context = LocalContext.current
+    val dyslexicFont by UiPrefs.dyslexiaFont.collectAsState()
     val sentence = StatusSentence.build(context, status, armed)
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -67,8 +69,9 @@ fun StatusSentenceCard(status: TrackingStatus, armed: Boolean) {
         Text(
             text = sentence,
             modifier = Modifier.padding(18.dp),
-            fontSize = 19.sp,
-            lineHeight = 30.sp,
+            fontFamily = if (dyslexicFont) OpenDyslexic else null,
+            fontSize = if (dyslexicFont) 17.sp else 19.sp,
+            lineHeight = 32.sp,
             fontWeight = FontWeight.Medium,
             color = if (status.alarming) Color.White else MaterialTheme.colorScheme.onSurface,
         )
