@@ -117,6 +117,9 @@ object Prefs {
     private const val K_BACKSTOP_MINUTES = "backstop_minutes"
     private const val K_SNOOZE_MINUTES = "snooze_minutes"
     private const val K_PREVIOUS_VOLUME = "previous_alarm_volume"
+    private const val K_LIMIT_HEADSET = "limit_headset_volume"
+    private const val K_HEADSET_PERCENT = "headset_volume_percent"
+    private const val K_DYSLEXIA_FONT = "dyslexia_font"
 
     private fun sp(ctx: Context): SharedPreferences =
         ctx.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -306,6 +309,25 @@ object Prefs {
 
     fun setManualStepDone(ctx: Context, key: String, done: Boolean) {
         sp(ctx).edit().putBoolean("manual_$key", done).apply()
+    }
+
+    /** Cap the alarm volume when it is going into your ears rather than a speaker. */
+    fun limitHeadsetVolume(ctx: Context): Boolean = sp(ctx).getBoolean(K_LIMIT_HEADSET, true)
+
+    fun setLimitHeadsetVolume(ctx: Context, value: Boolean) {
+        sp(ctx).edit().putBoolean(K_LIMIT_HEADSET, value).apply()
+    }
+
+    fun headsetVolumePercent(ctx: Context): Int = sp(ctx).getInt(K_HEADSET_PERCENT, 60)
+
+    fun setHeadsetVolumePercent(ctx: Context, value: Int) {
+        sp(ctx).edit().putInt(K_HEADSET_PERCENT, value.coerceIn(10, 100)).apply()
+    }
+
+    fun dyslexiaFont(ctx: Context): Boolean = sp(ctx).getBoolean(K_DYSLEXIA_FONT, true)
+
+    fun setDyslexiaFont(ctx: Context, value: Boolean) {
+        sp(ctx).edit().putBoolean(K_DYSLEXIA_FONT, value).apply()
     }
 
     fun previousAlarmVolume(ctx: Context): Int = sp(ctx).getInt(K_PREVIOUS_VOLUME, -1)

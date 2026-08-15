@@ -182,6 +182,8 @@ private fun HomeScreen() {
                 fontWeight = FontWeight.Bold,
             )
 
+            StatusSentenceCard(status = status, armed = armed)
+
             StatusCard(status = status, armed = armed)
 
             if (armed) {

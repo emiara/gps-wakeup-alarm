@@ -12,6 +12,8 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.media.AudioAttributes
+import android.media.AudioDeviceCallback
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.RingtoneManager
@@ -121,6 +123,16 @@ class TrackingService : Service(), LocationListener {
     private var mediaPlayer: MediaPlayer? = null
     private val fallbackTone = FallbackTone()
     private var vibrator: Vibrator? = null
+    private var audioRoute: AudioRoute = AudioRoute(AlarmOutput.SPEAKER, null)
+
+    /** Headphones coming and going changes both the status text and how we ring. */
+    private val audioDeviceCallback = object : AudioDeviceCallback() {
+        override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) =
+            onAudioRouteChanged()
+
+        override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) =
+            onAudioRouteChanged()
+    }
 
     private val ticker = object : Runnable {
         override fun run() {
@@ -146,6 +158,11 @@ class TrackingService : Service(), LocationListener {
         cpuWakeLock = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "gpswakeup:tracking")?.apply {
             setReferenceCounted(false)
             runCatching { acquire() }
+        }
+
+        refreshRoute()
+        runCatching {
+            getSystemService<AudioManager>()?.registerAudioDeviceCallback(audioDeviceCallback, handler)
         }
 
         // Show something immediately — Android gives us only a few seconds to call
@@ -236,6 +253,28 @@ class TrackingService : Service(), LocationListener {
                 nextLegName = Prefs.nextLeg(this)?.name,
             )
         }
+    }
+
+    private fun refreshRoute() {
+        audioRoute = AlarmAudio.currentRoute(this)
+        TrackerState.update {
+            it.copy(alarmOutput = audioRoute.output, outputName = audioRoute.deviceName)
+        }
+    }
+
+    /**
+     * If the headset appears or disappears mid-alarm, re-route the sound rather than
+     * carrying on playing into a device that is no longer there.
+     */
+    private fun onAudioRouteChanged() {
+        val previous = audioRoute.output
+        refreshRoute()
+        if (alarming && audioRoute.output != previous) {
+            applyAlarmVolume()
+            playAlarmSound()
+            startVibration()
+        }
+        refreshNotification()
     }
 
     // ---- location ----------------------------------------------------------
@@ -409,8 +448,9 @@ class TrackingService : Service(), LocationListener {
 
         TrackerState.update { it.copy(alarming = true, alarmReason = reason, snoozedUntilMillis = 0L) }
 
+        refreshRoute()
         wakeScreen()
-        forceAlarmVolume()
+        applyAlarmVolume()
         playAlarmSound()
         startVibration()
 
@@ -441,18 +481,18 @@ class TrackingService : Service(), LocationListener {
         }
     }
 
-    private fun forceAlarmVolume() {
-        if (!Prefs.forceMaxVolume(this)) return
+    /**
+     * Set the alarm stream volume for the current output: full blast on the phone speaker,
+     * capped when it is going into your ears.
+     */
+    private fun applyAlarmVolume() {
+        val target = AlarmAudio.targetVolumeIndex(this, audioRoute) ?: return
         val am = getSystemService<AudioManager>() ?: return
         runCatching {
             if (Prefs.previousAlarmVolume(this) < 0) {
                 Prefs.setPreviousAlarmVolume(this, am.getStreamVolume(AudioManager.STREAM_ALARM))
             }
-            am.setStreamVolume(
-                AudioManager.STREAM_ALARM,
-                am.getStreamMaxVolume(AudioManager.STREAM_ALARM),
-                0,
-            )
+            am.setStreamVolume(AudioManager.STREAM_ALARM, target, 0)
         }
     }
 
@@ -475,6 +515,8 @@ class TrackingService : Service(), LocationListener {
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
+        val preferred = AlarmAudio.deviceById(this, audioRoute.deviceId)
+
         val fromSystem = uri?.let { u ->
             runCatching {
                 MediaPlayer().apply {
@@ -482,6 +524,11 @@ class TrackingService : Service(), LocationListener {
                     setDataSource(this@TrackingService, u)
                     isLooping = true
                     prepare()
+                    // Explicitly aim at the headset; many devices otherwise keep alarms on
+                    // the phone speaker even with Bluetooth connected.
+                    if (preferred != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        runCatching { setPreferredDevice(preferred) }
+                    }
                     start()
                 }
             }.getOrNull()
@@ -498,7 +545,8 @@ class TrackingService : Service(), LocationListener {
     }
 
     private fun startVibration() {
-        if (!Prefs.vibrate(this)) return
+        // Forced on when the sound is capped for a headset.
+        if (!AlarmAudio.shouldVibrate(this, audioRoute)) return
         val v = vibrator ?: return
         if (!v.hasVibrator()) return
         val pattern = longArrayOf(0, 700, 400, 700, 400, 700, 1200)
@@ -633,11 +681,15 @@ class TrackingService : Service(), LocationListener {
             status.message?.let { append(" • ").append(it) }
         }
 
+        // Collapsed: the short distance line. Expanded: the same plain-English sentence
+        // the app shows, so the notification alone tells you what is going on.
+        val sentence = StatusSentence.build(this, status, Prefs.isArmed(this))
+
         return NotificationCompat.Builder(this, Notifications.CHANNEL_TRACKING)
             .setSmallIcon(R.drawable.ic_stat_bus)
             .setContentTitle(title)
             .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(sentence))
             .setOngoing(true)
             .setSilent(true)
             .setOnlyAlertOnce(true)
@@ -707,6 +759,9 @@ class TrackingService : Service(), LocationListener {
         stopAlarmSoundOnly()
         runCatching { vibrator?.cancel() }
         runCatching { locationManager.removeUpdates(this) }
+        runCatching {
+            getSystemService<AudioManager>()?.unregisterAudioDeviceCallback(audioDeviceCallback)
+        }
         handler.removeCallbacks(ticker)
         runCatching { cpuWakeLock?.takeIf { it.isHeld }?.release() }
         runCatching { screenWakeLock?.takeIf { it.isHeld }?.release() }

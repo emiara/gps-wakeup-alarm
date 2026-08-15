@@ -6,5 +6,6 @@ class WakeupApp : Application() {
     override fun onCreate() {
         super.onCreate()
         Notifications.createChannels(this)
+        UiPrefs.load(this)
     }
 }

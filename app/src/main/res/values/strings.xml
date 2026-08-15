@@ -122,7 +122,7 @@
     <string name="setting_force_volume">Force alarm volume to maximum</string>
     <string name="setting_force_volume_detail">Turns the alarm stream up when it rings, then puts it back.</string>
     <string name="setting_vibrate">Vibrate</string>
-    <string name="setting_vibrate_detail">Keeps working if the phone ends up muted somehow.</string>
+    <string name="setting_vibrate_detail">Keeps working if the phone ends up muted somehow. Always on when headphones are connected.</string>
     <string name="setting_missed_guard">Missed-stop guard</string>
     <string name="setting_missed_guard_detail">Also ring if you got close and are now clearly moving away again.</string>
     <string name="setting_backstop_off">Time backstop: off</string>
@@ -182,4 +182,37 @@
     <string name="notif_next_leg">" • then "%1$s</string>
     <string name="alarm_next_leg">Then: %1$s</string>
     <string name="action_off_here_next">GET OFF HERE\nNext stop arms now</string>
+    <!-- Plain-language status sentences -->
+    <string name="sentence_your_stop">your stop</string>
+    <string name="sentence_off">The alarm is off.</string>
+    <string name="sentence_off_hint">Choose where you want to be woken, then press Arm alarm.</string>
+    <string name="sentence_on_no_fix">The alarm is on for %1$s, but it has not found your position yet.</string>
+    <string name="sentence_on_far">The alarm is on and you are %1$s km from %2$s.</string>
+    <string name="sentence_on_near">The alarm is on and you are %1$d metres from %2$s.</string>
+    <string name="sentence_out_speaker">out loud on your phone</string>
+    <string name="sentence_out_bluetooth">in your Bluetooth headphones</string>
+    <string name="sentence_out_named">in your %1$s</string>
+    <string name="sentence_out_wired">in your headphones</string>
+    <string name="sentence_will_ring">It will ring %1$s when you get within %2$d metres.</string>
+    <string name="sentence_will_ring_and_buzz">It will ring %1$s and vibrate when you get within %2$d metres.</string>
+    <string name="sentence_volume_capped">Because you are wearing headphones the volume is held at %1$d percent, so it buzzes as well.</string>
+    <string name="sentence_then">After you get off there it will wake you again at %1$s.</string>
+    <string name="sentence_ringing">Wake up — this is %1$s.</string>
+    <string name="sentence_ringing_next">After this one, %1$s is still coming.</string>
+    <string name="sentence_service_restarting">The tracker is restarting itself right now.</string>
+    <string name="sentence_snoozed">You snoozed it, so it will ring again at %1$s.</string>
+    <string name="sentence_backstop">Even if the GPS fails completely, it will ring at %1$s.</string>
+
+    <!-- Alarm output -->
+    <string name="label_alarm_output">Alarm plays</string>
+    <string name="output_speaker">Phone speaker</string>
+    <string name="output_bluetooth">Bluetooth headphones</string>
+    <string name="output_wired">Wired headphones</string>
+
+    <!-- New settings -->
+    <string name="setting_limit_headset">Protect my hearing on headphones</string>
+    <string name="setting_limit_headset_detail">Caps the alarm volume when it plays into headphones instead of the speaker, and always vibrates to make up for it.</string>
+    <string name="setting_headset_percent">Headphone volume cap: %1$d percent</string>
+    <string name="setting_dyslexia_font">Dyslexia-friendly font</string>
+    <string name="setting_dyslexia_font_detail">Uses OpenDyslexic, with extra spacing between lines.</string>
 </resources>

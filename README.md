@@ -56,6 +56,39 @@ Night-bus reliability is the whole point, so the app fights the usual Android ap
 - **Ringing survives a process kill** — the alarm state is persisted, so if the app is killed
   mid-alarm the service picks it back up.
 
+## Headphones
+
+If Bluetooth or wired headphones are connected when the alarm fires, the sound is sent to
+them explicitly with `setPreferredDevice` — many phones otherwise keep alarms on the
+speaker even with Bluetooth connected.
+
+On headphones the behaviour deliberately changes:
+
+- **The volume is capped** rather than forced to maximum (60% of the stream max by default,
+  adjustable). A maxed-out alarm stream straight into your ears is a hearing risk.
+- **Vibration is forced on**, regardless of the vibrate setting, to make up for the quieter
+  sound.
+- If the headset connects or drops **mid-alarm**, the sound is re-routed rather than left
+  playing into a device that is no longer there.
+
+Note on the cap: Android does not expose the OS-level "safe media volume" figure to apps,
+so this is the app's own conservative cap approximating it, not a reading of the system
+value. The app does not request `BLUETOOTH_CONNECT`, so it can't always read your
+headphones' name — the status text says "your headphones" when it can't.
+
+## Plain-language status
+
+The top of the screen, and the expanded tracking notification, always read as full
+sentences rather than numbers:
+
+> The alarm is on and you are 3.2 km from Nesttun terminal. It will ring in your headphones
+> and vibrate when you get within 500 metres. Because you are wearing headphones the volume
+> is held at 60 percent, so it buzzes as well. After you get off there it will wake you
+> again at Home.
+
+The interface is set in **OpenDyslexic** by default, with extra line spacing — the users of
+this app are tired by definition. It can be switched off in Settings.
+
 ## Why it's audible
 
 - Plays on `STREAM_ALARM` with `USAGE_ALARM` audio attributes, which bypasses the ringer's
@@ -65,7 +98,7 @@ Night-bus reliability is the whole point, so the app fights the usual Android ap
   screen rather than showing a banner you'll sleep through.
 - Wakes the display, shows over the lock screen, and **disables the Back button** so a
   half-asleep hand can't silently cancel it.
-- Vibration waveform in parallel.
+- Vibration waveform in parallel, always on when headphones are connected.
 - **Synthesised fallback tone** if the device has no usable default alarm ringtone — a
   two-tone alarm generated through `AudioTrack`, so there is no audio asset that can be
   missing or unplayable.
@@ -86,7 +119,7 @@ Night-bus reliability is the whole point, so the app fights the usual Android ap
 | `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | Not being frozen by Doze mid-ride. |
 | `RECEIVE_BOOT_COMPLETED` | Resuming after a reboot. |
 | `ACCESS_NOTIFICATION_POLICY` | Ringing through Do Not Disturb. |
-| `MODIFY_AUDIO_SETTINGS` | Raising the alarm volume when it fires. |
+| `MODIFY_AUDIO_SETTINGS` | Setting the alarm volume when it fires. |
 | `INTERNET` | Stop search only. Not used while tracking. |
 
 The **"Will the alarm go off?"** checklist on the main screen verifies every one of these at
@@ -124,3 +157,8 @@ Install with `adb install -r app-debug.apk`, or copy the APK to the phone and op
 At 50 km/h a bus covers 500 m in about 36 seconds — enough time to wake up,
 gather your things and press the bell. Set it larger for fast routes, smaller for dense city
 stops where 500 m might cover two stops.
+
+## Third-party assets
+
+[OpenDyslexic](https://opendyslexic.org/) by Abbie Gonzalez, SIL Open Font License 1.1 —
+see `LICENSE-OpenDyslexic.txt`.

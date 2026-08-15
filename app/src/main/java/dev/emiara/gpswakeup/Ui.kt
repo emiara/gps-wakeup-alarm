@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,37 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
+
+// ---- plain-language status ---------------------------------------------------
+
+/**
+ * The one thing on this screen that should be readable at a glance while half asleep:
+ * what is going on, written as sentences.
+ */
+@Composable
+fun StatusSentenceCard(status: TrackingStatus, armed: Boolean) {
+    val context = LocalContext.current
+    val sentence = StatusSentence.build(context, status, armed)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = when {
+                status.alarming -> MaterialTheme.colorScheme.error
+                armed -> MaterialTheme.colorScheme.surfaceVariant
+                else -> MaterialTheme.colorScheme.surface
+            },
+        ),
+    ) {
+        Text(
+            text = sentence,
+            modifier = Modifier.padding(18.dp),
+            fontSize = 19.sp,
+            lineHeight = 30.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (status.alarming) Color.White else MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
 
 // ---- status ----------------------------------------------------------------
 
@@ -132,6 +164,15 @@ fun StatusCard(status: TrackingStatus, armed: Boolean) {
                 status.provider?.let {
                     LabelledRow(stringResource(R.string.label_source), it)
                 }
+                LabelledRow(
+                    stringResource(R.string.label_alarm_output),
+                    when (status.alarmOutput) {
+                        AlarmOutput.BLUETOOTH -> status.outputName
+                            ?: stringResource(R.string.output_bluetooth)
+                        AlarmOutput.WIRED -> stringResource(R.string.output_wired)
+                        AlarmOutput.SPEAKER -> stringResource(R.string.output_speaker)
+                    },
+                )
                 if (status.lastFixAtMillis > 0) {
                     LabelledRow(
                         stringResource(R.string.label_last_fix),
@@ -324,6 +365,9 @@ fun SettingsSection(context: Context, onChanged: () -> Unit) {
     var forceVolume by remember { mutableStateOf(Prefs.forceMaxVolume(context)) }
     var vibrate by remember { mutableStateOf(Prefs.vibrate(context)) }
     var missedGuard by remember { mutableStateOf(Prefs.missedStopGuard(context)) }
+    var limitHeadset by remember { mutableStateOf(Prefs.limitHeadsetVolume(context)) }
+    var headsetPercent by remember { mutableFloatStateOf(Prefs.headsetVolumePercent(context).toFloat()) }
+    var dyslexiaFont by remember { mutableStateOf(Prefs.dyslexiaFont(context)) }
     var backstop by remember { mutableFloatStateOf(Prefs.backstopMinutes(context).toFloat()) }
     var snooze by remember { mutableFloatStateOf(Prefs.snoozeMinutes(context).toFloat()) }
 
@@ -344,6 +388,40 @@ fun SettingsSection(context: Context, onChanged: () -> Unit) {
         ) {
             vibrate = it
             Prefs.setVibrate(context, it)
+            onChanged()
+        }
+        SwitchRow(
+            title = stringResource(R.string.setting_limit_headset),
+            detail = stringResource(R.string.setting_limit_headset_detail),
+            checked = limitHeadset,
+        ) {
+            limitHeadset = it
+            Prefs.setLimitHeadsetVolume(context, it)
+            onChanged()
+        }
+        if (limitHeadset) {
+            Text(
+                text = stringResource(R.string.setting_headset_percent, headsetPercent.roundToInt()),
+                fontWeight = FontWeight.SemiBold,
+            )
+            Slider(
+                value = headsetPercent,
+                onValueChange = { headsetPercent = it },
+                onValueChangeFinished = {
+                    Prefs.setHeadsetVolumePercent(context, headsetPercent.roundToInt())
+                    onChanged()
+                },
+                valueRange = 10f..100f,
+                steps = 17,
+            )
+        }
+        SwitchRow(
+            title = stringResource(R.string.setting_dyslexia_font),
+            detail = stringResource(R.string.setting_dyslexia_font_detail),
+            checked = dyslexiaFont,
+        ) {
+            dyslexiaFont = it
+            UiPrefs.setDyslexiaFont(context, it)
             onChanged()
         }
         SwitchRow(

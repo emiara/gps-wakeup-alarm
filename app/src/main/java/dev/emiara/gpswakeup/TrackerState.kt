@@ -17,12 +17,32 @@ data class TrackingStatus(
     val legIndex: Int = 0,
     val legCount: Int = 0,
     val nextLegName: String? = null,
+    val alarmOutput: AlarmOutput = AlarmOutput.SPEAKER,
+    val outputName: String? = null,
     val alarming: Boolean = false,
     val alarmReason: String? = null,
     val snoozedUntilMillis: Long = 0L,
     val backstopAtMillis: Long = 0L,
     val message: String? = null,
 )
+
+/**
+ * The handful of settings the theme depends on. Read straight from prefs the theme would
+ * never recompose when they change, because it sits above everything that does.
+ */
+object UiPrefs {
+    private val _dyslexiaFont = MutableStateFlow(true)
+    val dyslexiaFont: StateFlow<Boolean> = _dyslexiaFont
+
+    fun load(ctx: android.content.Context) {
+        _dyslexiaFont.value = Prefs.dyslexiaFont(ctx)
+    }
+
+    fun setDyslexiaFont(ctx: android.content.Context, value: Boolean) {
+        Prefs.setDyslexiaFont(ctx, value)
+        _dyslexiaFont.value = value
+    }
+}
 
 /**
  * Live tracking state shared between the service and the UI. Same process, so a plain
