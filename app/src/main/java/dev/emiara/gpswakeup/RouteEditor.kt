@@ -93,7 +93,7 @@ fun RoutesSection(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    if (selected && route.legs.size > 1) {
+                    if (selected && route.canReverse) {
                         Text(
                             text = stringResource(
                                 if (showReversed) {
@@ -104,6 +104,13 @@ fun RoutesSection(
                             ),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (showReversed) NightAmber else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (selected && route.startStopId == null) {
+                        Text(
+                            text = stringResource(R.string.route_needs_start),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = WarnAmber,
                         )
                     }
                 }
@@ -117,7 +124,7 @@ fun RoutesSection(
                     )
                 }
             }
-            if (route.id == selectedRouteId && route.legs.size > 1) {
+            if (route.id == selectedRouteId && route.canReverse) {
                 TextButton(
                     onClick = onToggleDirection,
                     enabled = !armed,
@@ -133,12 +140,11 @@ fun RoutesSection(
     }
 }
 
+/** The whole journey in travel order, boarding stop first. */
 private fun describe(route: Route, stops: List<Stop>, reversed: Boolean): String {
-    if (route.legs.isEmpty()) return "—"
-    val ordered = if (reversed) route.legs.reversed() else route.legs
-    return ordered.joinToString(" → ") { leg ->
-        stops.firstOrNull { it.id == leg.stopId }?.name ?: "?"
-    }
+    val places = Prefs.placesInOrder(route, reversed)
+    if (places.isEmpty()) return "—"
+    return places.joinToString(" → ") { id -> stops.firstOrNull { it.id == id }?.name ?: "?" }
 }
 
 /**
@@ -153,8 +159,11 @@ fun RouteEditorDialog(
     onSave: (Route) -> Unit,
 ) {
     var name by remember { mutableStateOf(existing?.name ?: "") }
+    var startStopId by remember { mutableStateOf(existing?.startStopId) }
     val legs = remember { mutableStateListOf<RouteLeg>().apply { addAll(existing?.legs.orEmpty()) } }
     var showStopPicker by remember { mutableStateOf(false) }
+    // Which slot the picker is filling: the boarding stop, or another waking stop.
+    var pickingStart by remember { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -201,6 +210,52 @@ fun RouteEditorDialog(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
+
+                    Text(
+                        text = stringResource(R.string.route_start_title),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = stringResource(R.string.route_start_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            val startStop = stops.firstOrNull { it.id == startStopId }
+                            Text(
+                                text = startStop?.name
+                                    ?: stringResource(R.string.route_start_none),
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (startStop == null) {
+                                    WarnAmber
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                            )
+                        }
+                        TextButton(onClick = {
+                            pickingStart = true
+                            showStopPicker = true
+                        }) {
+                            Text(
+                                stringResource(
+                                    if (startStopId == null) {
+                                        R.string.route_set_start
+                                    } else {
+                                        R.string.route_change_start
+                                    },
+                                ),
+                            )
+                        }
+                        if (startStopId != null) {
+                            TextButton(onClick = { startStopId = null }) {
+                                Text("✕", color = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
                     Text(
                         text = stringResource(R.string.route_legs_title),
@@ -273,7 +328,10 @@ fun RouteEditorDialog(
                         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
                     }
 
-                    TextButton(onClick = { showStopPicker = true }) {
+                    TextButton(onClick = {
+                        pickingStart = false
+                        showStopPicker = true
+                    }) {
                         Text(stringResource(R.string.route_add_leg))
                     }
                 }
@@ -287,6 +345,7 @@ fun RouteEditorDialog(
                                 Route(
                                     id = existing?.id ?: UUID.randomUUID().toString(),
                                     name = name.trim(),
+                                    startStopId = startStopId,
                                     legs = legs.toList(),
                                 ),
                             )
@@ -306,9 +365,12 @@ fun RouteEditorDialog(
     if (showStopPicker) {
         StopPickerDialog(
             stops = stops,
+            title = stringResource(
+                if (pickingStart) R.string.route_pick_start_title else R.string.route_pick_stop_title,
+            ),
             onDismiss = { showStopPicker = false },
             onPick = { stop ->
-                legs.add(RouteLeg(stopId = stop.id))
+                if (pickingStart) startStopId = stop.id else legs.add(RouteLeg(stopId = stop.id))
                 showStopPicker = false
             },
         )
@@ -318,12 +380,13 @@ fun RouteEditorDialog(
 @Composable
 private fun StopPickerDialog(
     stops: List<Stop>,
+    title: String,
     onDismiss: () -> Unit,
     onPick: (Stop) -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.route_pick_stop_title)) },
+        title = { Text(title) },
         text = {
             if (stops.isEmpty()) {
                 Text(stringResource(R.string.route_pick_stop_empty))

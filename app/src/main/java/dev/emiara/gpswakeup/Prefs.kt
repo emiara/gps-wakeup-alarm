@@ -52,18 +52,26 @@ data class RouteLeg(
 }
 
 /**
- * A saved journey — the transfer stop, then the one you actually get off at. Arming a route
- * arms its first leg; dismissing that alarm arms the next one automatically, so you never
- * have to re-arm the final destination half asleep at a bus interchange.
+ * A saved journey: where you board, then every stop that should wake you, in travel order.
+ *
+ * [startStopId] never rings — you are standing there when you arm it. It exists so the
+ * journey can be ridden backwards: reversing "board at Work, wake at Transfer, wake at Home"
+ * has to produce "board at Home, wake at Transfer, wake at Work", which is impossible to
+ * work out from the waking stops alone.
  */
 data class Route(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
+    val startStopId: String? = null,
     val legs: List<RouteLeg>,
 ) {
+    /** Without a starting stop there is no way to know where a reversed journey begins. */
+    val canReverse: Boolean get() = startStopId != null && legs.isNotEmpty()
+
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
         put("name", name)
+        put("startStopId", startStopId)
         put("legs", JSONArray().also { array -> legs.forEach { array.put(it.toJson()) } })
     }
 
@@ -82,6 +90,8 @@ data class Route(
             return Route(
                 id = o.optString("id", UUID.randomUUID().toString()),
                 name = o.optString("name", "Route"),
+                // Routes saved before starting stops existed simply have none.
+                startStopId = o.optString("startStopId").takeIf { it.isNotBlank() },
                 legs = legs,
             )
         }
@@ -151,7 +161,12 @@ object Prefs {
         // A route pointing at a stop that no longer exists would silently skip a leg.
         saveRoutes(
             ctx,
-            routes(ctx).map { route -> route.copy(legs = route.legs.filterNot { it.stopId == id }) },
+            routes(ctx).map { route ->
+                route.copy(
+                    startStopId = route.startStopId?.takeIf { it != id },
+                    legs = route.legs.filterNot { it.stopId == id },
+                )
+            },
         )
         if (armedStopId(ctx) == id) disarm(ctx)
     }
@@ -240,11 +255,30 @@ object Prefs {
     fun armedReversed(ctx: Context): Boolean = sp(ctx).getBoolean(K_ARMED_REVERSED, false)
 
     /**
-     * The legs of a route in travel order. Reversing a route is a property of this journey,
-     * not an edit to the saved route — the same route works there and back.
+     * Every place on the journey in travel order, starting stop first. This is what the
+     * route looks like on the ground; the alarms are everything after the first entry.
      */
-    fun legsInOrder(route: Route, reversed: Boolean): List<RouteLeg> =
-        if (reversed) route.legs.reversed() else route.legs
+    fun placesInOrder(route: Route, reversed: Boolean): List<String> {
+        val ids = listOfNotNull(route.startStopId) + route.legs.map { it.stopId }
+        return if (reversed) ids.reversed() else ids
+    }
+
+    /**
+     * The stops that will ring, in travel order.
+     *
+     * Ridden forwards that is simply the saved legs — you board at the starting stop, so it
+     * never rings. Ridden backwards the journey turns around: the last stop becomes where
+     * you board, and the original starting stop becomes the final alarm.
+     */
+    fun legsInOrder(route: Route, reversed: Boolean): List<RouteLeg> {
+        if (route.startStopId == null) {
+            // Legacy route with no starting stop; nothing sensible to turn around.
+            return if (reversed) route.legs.reversed() else route.legs
+        }
+        return placesInOrder(route, reversed)
+            .drop(1)
+            .map { stopId -> route.legs.firstOrNull { it.stopId == stopId } ?: RouteLeg(stopId) }
+    }
 
     private fun armedLegs(ctx: Context): List<RouteLeg> {
         val route = armedRoute(ctx) ?: return emptyList()

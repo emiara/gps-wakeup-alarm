@@ -37,14 +37,22 @@ offline** — once a stop is saved, you can be in a tunnel with no signal and it
 
 ## Saved routes
 
-A route is a named, ordered list of your stops: the transfer first, the stop you actually
-get off at last. Arm the route and dismissing one leg's alarm arms the next automatically —
-no re-arming your final destination half asleep at an interchange. Only the last leg's
-dismissal ends the journey.
+A route is **where you get on**, followed by every stop that should wake you, in travel
+order. The boarding stop never rings — you are standing there when you arm it. Dismissing
+one leg's alarm arms the next automatically, so there is no re-arming your final destination
+half asleep at an interchange. Only the last leg's dismissal ends the journey.
 
-**Routes run both ways.** Select a route and tap *Ride this route the other way* to arm it
-in reverse — the same saved journey gets you to work and back home again. Direction is a
-property of this trip, not an edit to the route, so the saved order is never touched.
+**Routes run both ways.** Select a route and tap *Ride this route the other way*:
+
+```
+saved     board at Work  →  wake at Transfer  →  wake at Home
+reversed  board at Home  →  wake at Transfer  →  wake at Work
+```
+
+The boarding stop is what makes this work. Without it, reversing the waking stops alone
+would put the first alarm at the place you are standing — which is why a route needs a
+starting stop before it can be reversed. Direction is a property of the trip, not an edit
+to the route, so the saved order is never touched.
 
 ## Why it stays alive
 

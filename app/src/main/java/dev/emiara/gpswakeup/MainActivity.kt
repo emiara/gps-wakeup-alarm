@@ -160,7 +160,9 @@ private fun HomeScreen() {
     fun armNow() {
         val routeId = selectedRouteId
         if (routeId != null) {
-            TrackingService.armRoute(context, routeId, reversed = routeReversed)
+            // A route without a starting stop has no meaningful reverse.
+            val canReverse = Prefs.routeById(context, routeId)?.canReverse == true
+            TrackingService.armRoute(context, routeId, reversed = routeReversed && canReverse)
         } else {
             TrackingService.arm(context, selectedStopId ?: return)
         }
